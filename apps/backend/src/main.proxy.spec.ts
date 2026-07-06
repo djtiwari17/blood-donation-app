@@ -7,13 +7,13 @@
  * These tests use plain Express — no NestJS bootstrapping overhead —
  * because the behavior under test is an Express setting, not a NestJS API.
  */
-import * as express from 'express';
-import * as supertest from 'supertest';
+import express from 'express';
+import supertest from 'supertest';
 
 function makeApp(trustProxy: boolean | number) {
   const app = express();
   if (trustProxy !== false) app.set('trust proxy', trustProxy);
-  app.get('/ip', (req, res) => res.json({ ip: req.ip }));
+  app.get('/ip', (req: express.Request, res: express.Response) => res.json({ ip: req.ip }));
   return app;
 }
 
