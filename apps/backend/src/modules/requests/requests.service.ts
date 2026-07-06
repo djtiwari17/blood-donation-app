@@ -94,7 +94,7 @@ export class RequestsService {
     if (lat && lng) {
       await this.prisma.$executeRaw`
         UPDATE blood_requests
-        SET hospital_location = ST_SetSRID(
+        SET "hospitalLocation" = ST_SetSRID(
           ST_MakePoint(${lng}::float8, ${lat}::float8),
           4326
         )::geography
@@ -266,31 +266,31 @@ export class RequestsService {
     const rows = await this.prisma.$queryRaw<any[]>`
       SELECT
         br.id,
-        br.request_code AS "requestCode",
-        br.patient_name AS "patientName",
-        br.hospital_name AS "hospitalName",
-        br.hospital_lat AS "hospitalLat",
-        br.hospital_lng AS "hospitalLng",
-        br.blood_group AS "bloodGroup",
-        br.units_needed AS "unitsNeeded",
-        br.units_fulfilled AS "unitsFulfilled",
+        br."requestCode",
+        br."patientName",
+        br."hospitalName",
+        br."hospitalLat",
+        br."hospitalLng",
+        br."bloodGroup",
+        br."unitsNeeded",
+        br."unitsFulfilled",
         br.urgency,
-        br.required_by AS "requiredBy",
-        br.expires_at AS "expiresAt",
+        br."requiredBy",
+        br."expiresAt",
         br.status,
-        br.created_at AS "createdAt",
+        br."createdAt",
         ST_Distance(
-          br.hospital_location,
+          br."hospitalLocation",
           ST_GeogFromText('SRID=4326;POINT(' || ${lng}::float8 || ' ' || ${lat}::float8 || ')')
         ) / 1000.0 AS "distanceKm"
       FROM blood_requests br
       WHERE
-        br.hospital_location IS NOT NULL
+        br."hospitalLocation" IS NOT NULL
         AND br.status IN ('PENDING', 'PARTIALLY_FULFILLED')
-        AND br.expires_at > NOW()
-        AND br.blood_group = ANY(${recipientGroups}::blood_group[])
+        AND br."expiresAt" > NOW()
+        AND br."bloodGroup" = ANY(${recipientGroups}::"BloodGroup"[])
         AND ST_DWithin(
-          br.hospital_location,
+          br."hospitalLocation",
           ST_GeogFromText('SRID=4326;POINT(' || ${lng}::float8 || ' ' || ${lat}::float8 || ')'),
           ${radiusMeters}::float8
         )

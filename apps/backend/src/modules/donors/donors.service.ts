@@ -55,7 +55,7 @@ export class DonorsService {
           ST_MakePoint(${dto.locationLng}::float8, ${dto.locationLat}::float8),
           4326
         )::geography
-        WHERE user_id = ${userId}::uuid
+        WHERE "userId" = ${userId}::uuid
       `;
 
       const area = await this.geocoding.reverseGeocode(dto.locationLat, dto.locationLng);
@@ -96,7 +96,7 @@ export class DonorsService {
           ST_MakePoint(${dto.locationLng}::float8, ${dto.locationLat}::float8),
           4326
         )::geography
-        WHERE user_id = ${userId}::uuid
+        WHERE "userId" = ${userId}::uuid
       `;
       const area = await this.geocoding.reverseGeocode(dto.locationLat, dto.locationLng);
       if (area) {
