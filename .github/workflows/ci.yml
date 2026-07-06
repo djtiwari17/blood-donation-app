@@ -176,6 +176,18 @@ jobs:
             # ── 4. Generate Prisma client ────────────────────────────────────
             npx prisma generate --schema=prisma/schema.prisma
 
+            # ── 4b. Fix @prisma/client resolution for the compiled runtime ───
+            # schema.prisma's custom `output` generates the real client into
+            # apps/backend/node_modules/.prisma/client, but the hoisted
+            # @prisma/client package (root node_modules) internally resolves
+            # `.prisma/client` from its OWN location first, finding a stale/
+            # empty stub at root node_modules/.prisma/client instead. Jest
+            # tests dodge this via moduleNameMapper; plain `node dist/main.js`
+            # does not, so `@prisma/client`'s enums (e.g. BloodGroup) come back
+            # undefined at runtime. Force root to point at the real client.
+            rm -rf node_modules/.prisma/client
+            ln -s ../../apps/backend/node_modules/.prisma/client node_modules/.prisma/client
+
             # ── 5. Run pending migrations (via DIRECT_URL — bypasses pooler) ─
             DATABASE_URL="$DATABASE_URL_PROD" DIRECT_URL="$DIRECT_URL_PROD" \
               npx prisma migrate deploy --schema=prisma/schema.prisma

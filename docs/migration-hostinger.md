@@ -152,6 +152,15 @@ npm ci --workspace=apps/backend
 # Generate Prisma client
 npx prisma generate --schema=prisma/schema.prisma
 
+# Fix @prisma/client resolution for the compiled runtime: schema.prisma's
+# custom `output` generates the real client into
+# apps/backend/node_modules/.prisma/client, but the hoisted @prisma/client
+# package resolves `.prisma/client` from its own location first, finding a
+# stale/empty stub at root node_modules/.prisma/client instead (Jest tests
+# dodge this via moduleNameMapper; `node dist/main.js` does not).
+rm -rf node_modules/.prisma/client
+ln -s ../../apps/backend/node_modules/.prisma/client node_modules/.prisma/client
+
 # Build (produces apps/backend/dist/)
 npm run build --workspace=apps/backend
 
