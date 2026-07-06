@@ -1,0 +1,53 @@
+# =============================================================================
+# Render.com deployment configuration
+# Deploy both the API and the BullMQ worker from the same Docker image
+# Set secret environment variables in Render dashboard → Environment Groups
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # NestJS REST + WebSocket API
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: blooddonation-api
+    runtime: docker
+    dockerfilePath: apps/backend/Dockerfile
+    dockerContext: .
+    branch: main
+    healthCheckPath: /health
+    autoDeploy: true
+    envVarGroups:
+      - blooddonation-secrets
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WORKER_MODE
+        value: "false"
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 80
+      targetCPUPercent: 70
+
+  # ---------------------------------------------------------------------------
+  # BullMQ Worker
+  # ---------------------------------------------------------------------------
+  - type: worker
+    name: blooddonation-worker
+    runtime: docker
+    dockerfilePath: apps/backend/Dockerfile
+    dockerContext: .
+    branch: main
+    autoDeploy: true
+    envVarGroups:
+      - blooddonation-secrets
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WORKER_MODE
+        value: "true"
+
+# NOTE: Database (Neon/Supabase) and Redis (Upstash) are external managed services.
+# Add their connection strings as secrets in the blooddonation-secrets env group:
+#   DATABASE_URL, REDIS_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, SMS_PROVIDER, etc.
+# See .env.example for the full list.

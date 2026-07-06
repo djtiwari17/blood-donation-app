@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment — NEVER commit real secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Expo / React Native
+.expo/
+*.orig.*
+web-build/
+android/
+ios/
+
+# NestJS
+apps/backend/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+*.suo
+*.user
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# k6
+tests/k6/results/
+
+# Temporary
+tmp/
+temp/
+
+# Secrets — NEVER commit; values belong in VPS /etc/blood-donation/.env
+# and GitHub Actions Secrets at deploy time
+Secrets.txt
+docs/Secrets.txt
+*.secrets.txt
+secrets/

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ls *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\(require\\('child_process'\\).execSync\\('npm root -g'\\).toString\\(\\)\\)\")",
+      "Bash(set NODE_PATH=C:\\\\Users\\\\LENOVO\\\\AppData\\\\Roaming\\\\npm\\\\node_modules)",
+      "Bash(node build_blueprint.js)",
+      "Bash(python \"C:\\\\Users\\\\LENOVO\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\81e87a41-e114-435c-9e52-b0c736fca662\\\\2d6f2ad0-6815-42d4-a8c4-35b98f55979e\\\\skills\\\\docx\\\\scripts\\\\office\\\\validate.py\" Blood_Donation_App_Technical_Blueprint.docx)",
+      "Bash(python -c \"import zipfile,xml.dom.minidom as m; z=zipfile.ZipFile\\('Blood_Donation_App_Technical_Blueprint.docx'\\); bad=z.testzip\\(\\); print\\('zip ok' if bad is None else bad\\); [m.parseString\\(z.read\\(n\\)\\) for n in z.namelist\\(\\) if n.endswith\\('.xml'\\)]; print\\('all xml well-formed'\\); print\\('files:', len\\(z.namelist\\(\\)\\)\\)\")",
+      "Bash(node -e ' *)",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\LENOVO\\\\Desktop\\\\Blood donation App\"; Get-ChildItem -Recurse -File | Where-Object { $_.FullName -notmatch 'node_modules' -and $_.FullName -notmatch '\\\\.git' } | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"C:\\\\Users\\\\LENOVO\\\\Desktop\\\\Blood donation App\\\\\", \"\"\\) })",
+      "Bash(dir \"C:\\\\Users\\\\LENOVO\\\\Desktop\\\\Blood donation App\")"
+    ]
+  }
+}

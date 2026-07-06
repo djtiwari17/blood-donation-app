@@ -1,0 +1,286 @@
+// =============================================================================
+// Blood Donation App — Prisma Schema
+// PostgreSQL 16 + PostGIS 3.4
+// Run migrations: npx prisma migrate dev --schema=prisma/schema.prisma
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+  output          = "../apps/backend/node_modules/.prisma/client"
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [postgis, uuidOssp(map: "uuid-ossp")]
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum BloodGroup {
+  A_POS  @map("A+")
+  A_NEG  @map("A-")
+  B_POS  @map("B+")
+  B_NEG  @map("B-")
+  AB_POS @map("AB+")
+  AB_NEG @map("AB-")
+  O_POS  @map("O+")
+  O_NEG  @map("O-")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum UserRole {
+  DONOR
+  RECEIVER
+  DONOR_RECEIVER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum VerifStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum UrgencyLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RequestStatus {
+  PENDING
+  PARTIALLY_FULFILLED
+  FULFILLED
+  EXPIRED
+  CANCELLED
+}
+
+enum MatchStatus {
+  NOTIFIED
+  ACCEPTED
+  DONATED
+  CANCELLED
+  TIMED_OUT
+}
+
+enum SmsProvider {
+  CONSOLE
+  MSG91
+  TWILIO
+  FIREBASE
+}
+
+enum ReportReason {
+  FAKE_PROFILE
+  SPAM
+  HARASSMENT
+  WRONG_INFO
+  OTHER
+}
+
+// =============================================================================
+// TABLES
+// =============================================================================
+
+model User {
+  id           String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  phone        String      @unique @db.VarChar(15)
+  name         String      @db.VarChar(100)
+  email        String?     @unique @db.VarChar(255)
+  bloodGroup   BloodGroup
+  gender       Gender?
+  dateOfBirth  DateTime?   @db.Date
+  city         String?     @db.VarChar(100)
+  area         String?     @db.VarChar(100)
+  role         UserRole    @default(DONOR)
+  fcmToken     String?     @db.VarChar(500)
+  isBlocked    Boolean     @default(false)
+  verifStatus  VerifStatus @default(UNVERIFIED)
+  reportCount  Int         @default(0)
+  createdAt    DateTime    @default(now()) @db.Timestamptz
+  deletedAt    DateTime?   @db.Timestamptz
+
+  donorProfile     DonorProfile?
+  bloodRequests    BloodRequest[]
+  notifications    Notification[]
+  reportsMade      Report[]         @relation("reporter")
+  reportsReceived  Report[]         @relation("reported")
+  auditLogs        AuditLog[]
+  otpVerifs        OtpVerif[]
+  refreshTokens    RefreshToken[]
+
+  @@index([bloodGroup])
+  @@index([verifStatus])
+  @@index([phone])
+  @@map("users")
+}
+
+model DonorProfile {
+  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId           String    @unique @db.Uuid
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isAvailable      Boolean   @default(true)
+  lastDonationDate DateTime? @db.Date
+  // location GEOGRAPHY(POINT,4326) — migration 20260623190000_postgis_geography
+  // "nextEligibleDate" DATE GENERATED ALWAYS AS ("lastDonationDate" + 56 days) STORED
+  //   — same migration; not in Prisma client (Prisma selects named fields, not SELECT *)
+  locationLat      Float?
+  locationLng      Float?
+  totalDonations   Int       @default(0)
+  livesSaved       Int       @default(0)
+  responseRate     Float     @default(0) // 0.0–1.0
+
+  matches BloodMatch[]
+
+  @@index([isAvailable])
+  @@map("donor_profiles")
+}
+
+model BloodRequest {
+  id             String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  requestCode    String        @unique @db.VarChar(12)
+  receiverId     String        @db.Uuid
+  receiver       User          @relation(fields: [receiverId], references: [id])
+  patientName    String        @db.VarChar(100)
+  hospitalName   String        @db.VarChar(200)
+  // "hospitalLocation" GEOGRAPHY(POINT,4326) — migration 20260623190000_postgis_geography
+  hospitalLat    Float?
+  hospitalLng    Float?
+  bloodGroup     BloodGroup
+  unitsNeeded    Int
+  unitsFulfilled Int           @default(0)
+  urgency        UrgencyLevel
+  requiredBy     DateTime      @db.Timestamptz
+  expiresAt      DateTime      @db.Timestamptz
+  status         RequestStatus @default(PENDING)
+  createdAt      DateTime      @default(now()) @db.Timestamptz
+
+  matches BloodMatch[]
+
+  @@index([status, urgency])
+  @@index([bloodGroup, status])
+  @@index([expiresAt])
+  @@map("blood_requests")
+}
+
+model BloodMatch {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  requestId      String       @db.Uuid
+  request        BloodRequest @relation(fields: [requestId], references: [id])
+  donorProfileId String       @db.Uuid
+  donorProfile   DonorProfile @relation(fields: [donorProfileId], references: [id])
+  status         MatchStatus  @default(NOTIFIED)
+  distanceKm     Float
+  score          Float        // 0–100 composite
+  notifiedAt     DateTime     @default(now()) @db.Timestamptz
+  respondedAt    DateTime?    @db.Timestamptz
+  donatedAt      DateTime?    @db.Timestamptz
+  timeoutAt      DateTime     @db.Timestamptz
+  cancelReason   String?
+
+  @@unique([requestId, donorProfileId])
+  @@index([status, timeoutAt])
+  @@map("blood_matches")
+}
+
+model OtpVerif {
+  id         String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId     String?     @db.Uuid
+  user       User?       @relation(fields: [userId], references: [id])
+  phone      String      @db.VarChar(15)
+  provider   SmsProvider
+  sentAt     DateTime    @default(now()) @db.Timestamptz
+  verifiedAt DateTime?   @db.Timestamptz
+
+  @@index([phone, sentAt])
+  @@map("otp_verifs")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @db.VarChar(128)
+  expiresAt DateTime  @db.Timestamptz
+  revokedAt DateTime? @db.Timestamptz
+  createdAt DateTime  @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Notification {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   @db.VarChar(50)
+  title     String   @db.VarChar(200)
+  body      String
+  isRead    Boolean  @default(false)
+  relatedId String?  @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Report {
+  id         String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  reporterId String       @db.Uuid
+  reporter   User         @relation("reporter", fields: [reporterId], references: [id])
+  reportedId String       @db.Uuid
+  reported   User         @relation("reported", fields: [reportedId], references: [id])
+  reason     ReportReason
+  details    String?
+  resolvedAt DateTime?    @db.Timestamptz
+  resolution String?
+  createdAt  DateTime     @default(now()) @db.Timestamptz
+
+  @@unique([reporterId, reportedId])
+  @@index([reportedId, resolvedAt])
+  @@map("reports")
+}
+
+model GeocodeCache {
+  id          String   @id @default(cuid())
+  query       String   @unique @db.VarChar(500)
+  lat         Float
+  lng         Float
+  displayName String
+  cachedAt    DateTime @default(now()) @db.Timestamptz
+
+  @@index([cachedAt])
+  @@map("geocode_cache")
+}
+
+model AuditLog {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String?  @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String   @db.VarChar(100)
+  entity    String?  @db.VarChar(50)
+  entityId  String?  @db.Uuid
+  meta      Json?
+  ipAddress String?  @db.VarChar(45)
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}

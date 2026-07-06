@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Blood Donation App — Subscriptions &amp; Services Required</title>
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Page Setup ── */
+    @page { size: A4; margin: 18mm 15mm 18mm 15mm; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 10.5pt;
+      color: #1a1a2e;
+      background: #fff;
+      line-height: 1.55;
+    }
+
+    /* ── Print Button (hidden in PDF) ── */
+    .print-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      background: #c0392b; color: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 24px; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .print-bar span { opacity: 0.85; }
+    .print-bar button {
+      background: #fff; color: #c0392b; border: none; border-radius: 6px;
+      padding: 7px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .print-bar button:hover { background: #ffeaea; }
+    @media print { .print-bar { display: none !important; } }
+
+    /* ── Wrapper ── */
+    .page { max-width: 780px; margin: 64px auto 40px; padding: 0 20px; }
+    @media print { .page { margin: 0; padding: 0; } }
+
+    /* ── Cover Header ── */
+    .cover {
+      background: linear-gradient(135deg, #c0392b 0%, #8e1a10 100%);
+      border-radius: 12px; padding: 36px 40px; color: #fff; margin-bottom: 28px;
+    }
+    @media print { .cover { border-radius: 0; } }
+    .cover .label {
+      font-size: 8.5pt; letter-spacing: 2px; text-transform: uppercase;
+      opacity: 0.75; margin-bottom: 8px;
+    }
+    .cover h1 { font-size: 22pt; font-weight: 800; line-height: 1.2; margin-bottom: 10px; }
+    .cover .subtitle { font-size: 10.5pt; opacity: 0.85; max-width: 520px; }
+    .cover .meta {
+      display: flex; gap: 28px; margin-top: 22px;
+      font-size: 9pt; opacity: 0.7;
+    }
+    .cover .meta div strong { display: block; font-size: 10pt; opacity: 1; color: #fff; }
+
+    /* ── Intro Box ── */
+    .intro {
+      background: #fff8f0; border-left: 4px solid #e67e22;
+      border-radius: 0 8px 8px 0; padding: 14px 18px;
+      font-size: 10pt; color: #5d3a1a; margin-bottom: 24px;
+      page-break-inside: avoid;
+    }
+    .intro strong { color: #c0392b; }
+
+    /* ── Section Title ── */
+    .section-title {
+      font-size: 9pt; letter-spacing: 1.5px; text-transform: uppercase;
+      color: #c0392b; font-weight: 700; margin: 28px 0 12px;
+      border-bottom: 2px solid #f5c6c6; padding-bottom: 6px;
+    }
+
+    /* ── Subscription Card ── */
+    .card {
+      background: #fff; border: 1px solid #e8e8e8; border-radius: 10px;
+      margin-bottom: 14px; overflow: hidden; page-break-inside: avoid;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .card-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 13px 18px 11px; background: #fafafa;
+      border-bottom: 1px solid #efefef;
+    }
+    .card-number {
+      min-width: 30px; height: 30px; border-radius: 50%;
+      background: #c0392b; color: #fff; font-weight: 800;
+      font-size: 12pt; display: flex; align-items: center; justify-content: center;
+    }
+    .card-title-block { flex: 1; }
+    .card-title { font-size: 12pt; font-weight: 700; color: #1a1a2e; }
+    .card-provider { font-size: 8.5pt; color: #888; margin-top: 1px; }
+    .cost-badge {
+      background: #1a1a2e; color: #fff; border-radius: 6px;
+      padding: 4px 11px; font-size: 9pt; font-weight: 700; white-space: nowrap;
+    }
+    .cost-badge.free { background: #27ae60; }
+    .cost-badge.onetime { background: #2980b9; }
+    .cost-badge.variable { background: #7f4500; }
+    .card-body { padding: 14px 18px; }
+    .card-body p { margin-bottom: 8px; font-size: 10pt; color: #333; }
+    .card-body p:last-child { margin-bottom: 0; }
+
+    .detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      margin-top: 10px;
+    }
+    .detail-item {
+      background: #f8f8f8; border-radius: 6px; padding: 8px 12px;
+    }
+    .detail-item .d-label { font-size: 8pt; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+    .detail-item .d-value { font-size: 10pt; font-weight: 600; color: #1a1a2e; margin-top: 2px; }
+
+    .alert-box {
+      background: #fff3cd; border: 1px solid #f0c040; border-radius: 6px;
+      padding: 10px 14px; margin-top: 10px; font-size: 9.5pt; color: #5a4000;
+    }
+    .alert-box strong { color: #c07000; }
+
+    /* ── Summary Table ── */
+    .summary-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 9.5pt; }
+    .summary-table thead tr { background: #1a1a2e; color: #fff; }
+    .summary-table thead th { padding: 10px 12px; text-align: left; font-weight: 600; }
+    .summary-table tbody tr:nth-child(even) { background: #f8f8f8; }
+    .summary-table tbody td { padding: 9px 12px; border-bottom: 1px solid #efefef; vertical-align: top; }
+    .summary-table .cost-cell { font-weight: 700; white-space: nowrap; }
+    .tag {
+      display: inline-block; border-radius: 4px; padding: 2px 7px;
+      font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .tag.monthly { background: #fde8e8; color: #c0392b; }
+    .tag.onetime  { background: #dce9ff; color: #1a5fc0; }
+    .tag.annual   { background: #e8f0fe; color: #1a5fc0; }
+    .tag.free     { background: #d4edda; color: #155724; }
+    .tag.variable { background: #fff3cd; color: #856404; }
+
+    /* ── Cost Summary Box ── */
+    .cost-summary {
+      margin-top: 28px; page-break-inside: avoid;
+      border: 2px solid #c0392b; border-radius: 10px; overflow: hidden;
+    }
+    .cost-summary-header {
+      background: #c0392b; color: #fff; padding: 12px 20px;
+      font-size: 11pt; font-weight: 700;
+    }
+    .cost-summary-body { padding: 16px 20px; }
+    .cost-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 0; border-bottom: 1px dashed #e0e0e0; font-size: 10pt;
+    }
+    .cost-row:last-child { border-bottom: none; }
+    .cost-row .label-col { color: #555; }
+    .cost-row .value-col { font-weight: 700; color: #1a1a2e; }
+    .cost-row.total-row {
+      margin-top: 6px; padding-top: 12px; border-top: 2px solid #1a1a2e;
+      border-bottom: none; font-size: 11pt;
+    }
+    .cost-row.total-row .value-col { color: #c0392b; font-size: 12pt; }
+
+    /* ── Important Notes ── */
+    .notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .note-card {
+      border-radius: 8px; padding: 14px; border: 1px solid #e0e0e0;
+      page-break-inside: avoid;
+    }
+    .note-card .note-icon { font-size: 18pt; margin-bottom: 6px; }
+    .note-card .note-title { font-size: 10pt; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+    .note-card .note-body { font-size: 9pt; color: #555; line-height: 1.5; }
+    .note-card.red { background: #fff5f5; border-color: #f5c6c6; }
+    .note-card.blue { background: #f0f4ff; border-color: #c6d5f5; }
+    .note-card.green { background: #f0fff4; border-color: #c6f0d0; }
+    .note-card.yellow { background: #fffdf0; border-color: #f0e6c6; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 36px; border-top: 1px solid #e0e0e0;
+      padding-top: 14px; font-size: 8.5pt; color: #aaa;
+      text-align: center; page-break-inside: avoid;
+    }
+
+    /* ── Page break helpers ── */
+    .break-before { page-break-before: always; }
+  </style>
+</head>
+<body>
+
+<!-- Print Bar -->
+<div class="print-bar">
+  <span>Open in browser → click Save as PDF</span>
+  <button onclick="window.print()">&#128438; Save / Print as PDF</button>
+</div>
+
+<div class="page">
+
+  <!-- ══ COVER HEADER ══ -->
+  <div class="cover">
+    <div class="label">Prepared for Client Review</div>
+    <h1>Blood Donation App<br>Subscriptions &amp; Services</h1>
+    <div class="subtitle">A complete list of services your app needs to run for up to 1,00,000 users — explained in simple terms with estimated costs.</div>
+    <div class="meta">
+      <div><strong>Target Users</strong>Up to 1,00,000</div>
+      <div><strong>Platform</strong>Android + iOS</div>
+      <div><strong>Country</strong>India</div>
+      <div><strong>Prepared</strong>June 2026</div>
+    </div>
+  </div>
+
+  <!-- ══ INTRO ══ -->
+  <div class="intro">
+    Think of this app like a restaurant. The <strong>app stores</strong> are the front door where customers (users) walk in. The <strong>server (Railway)</strong> is the kitchen where all the cooking (data processing) happens. The <strong>SMS service</strong> is the delivery boy who sends the OTP to users' phones. Every item below plays a specific role — remove any one of them and part of the app stops working.
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 1 — APP STORES                     -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-title">Part 1 — Putting Your App on Phones</div>
+
+  <!-- Card 1 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">1</div>
+      <div class="card-title-block">
+        <div class="card-title">Google Play Store Account</div>
+        <div class="card-provider">Provider: Google &nbsp;|&nbsp; play.google.com/console</div>
+      </div>
+      <div class="cost-badge onetime">₹2,100 — One-time</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> Google runs the "shop" where people download Android apps — it's called the Play Store. To publish your app there, Google charges a one-time registration fee. After that, you can publish unlimited updates for free.</p>
+      <p><strong>Why you cannot skip it:</strong> Over 95% of phone users in India use Android phones. Without this, your app simply cannot be downloaded by Android users — which is nearly all of your audience.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Cost</div><div class="d-value">$25 (~₹2,100)</div></div>
+        <div class="detail-item"><div class="d-label">Paid How Often</div><div class="d-value">Once only — never again</div></div>
+        <div class="detail-item"><div class="d-label">What You Get</div><div class="d-value">Publish unlimited Android apps</div></div>
+        <div class="detail-item"><div class="d-label">Paid To</div><div class="d-value">Google (credit card)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">2</div>
+      <div class="card-title-block">
+        <div class="card-title">Apple App Store Account</div>
+        <div class="card-provider">Provider: Apple &nbsp;|&nbsp; developer.apple.com</div>
+      </div>
+      <div class="cost-badge">₹8,300/year</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> Apple runs the "shop" for iPhone users — called the App Store. Unlike Google, Apple charges every year to keep your app listed. If you stop paying, your app gets removed from the App Store automatically.</p>
+      <p><strong>Why you cannot skip it:</strong> iPhone users (iOS) cannot install apps from anywhere other than the App Store. If you want iPhone users to use your blood donation app, this account is mandatory.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Cost</div><div class="d-value">$99/year (~₹8,300)</div></div>
+        <div class="detail-item"><div class="d-label">Paid How Often</div><div class="d-value">Every year — must renew</div></div>
+        <div class="detail-item"><div class="d-label">What You Get</div><div class="d-value">Publish unlimited iOS apps</div></div>
+        <div class="detail-item"><div class="d-label">Paid To</div><div class="d-value">Apple (credit/debit card)</div></div>
+      </div>
+      <div class="alert-box">
+        <strong>Important:</strong> Apple's $99/year must be renewed on time. If the payment lapses, your app disappears from the App Store for all users — even those who already have it installed will stop receiving updates.
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">3</div>
+      <div class="card-title-block">
+        <div class="card-title">Expo EAS Build Service</div>
+        <div class="card-provider">Provider: Expo &nbsp;|&nbsp; expo.dev</div>
+      </div>
+      <div class="cost-badge">₹8,300/month</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> Your app is written in code. Before it can go on a phone, that code needs to be "packaged" into an actual app file (like an APK for Android). Expo EAS is the service that does this packaging. Think of it like a factory that takes raw materials (your code) and produces a finished product (the installable app).</p>
+      <p><strong>Why you cannot skip it:</strong> Without EAS, there is no way to create the app file that goes on users' phones. You'd need expensive Apple machines (Mac) and complex setup to do this manually — EAS handles all of that in the cloud.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Cost</div><div class="d-value">$99/month (~₹8,300)</div></div>
+        <div class="detail-item"><div class="d-label">Paid How Often</div><div class="d-value">Every month</div></div>
+        <div class="detail-item"><div class="d-label">What You Get</div><div class="d-value">Unlimited app builds, Android + iOS</div></div>
+        <div class="detail-item"><div class="d-label">Paid To</div><div class="d-value">Expo / Stripe (credit card)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 2 — SMS & NOTIFICATIONS            -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-title">Part 2 — Communicating With Users</div>
+
+  <!-- Card 4 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">4</div>
+      <div class="card-title-block">
+        <div class="card-title">Firebase — Push Notifications</div>
+        <div class="card-provider">Provider: Google &nbsp;|&nbsp; firebase.google.com</div>
+      </div>
+      <div class="cost-badge free">Completely Free</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> When a blood request is posted near a donor, the app needs to immediately send a notification to that donor's phone — like "Someone near you needs A+ blood urgently!" Firebase is Google's service that delivers these instant notifications. It works 24/7 without any cost.</p>
+      <p><strong>Why you cannot skip it:</strong> Without Firebase, donors would never know about blood requests unless they manually open the app and check. The entire real-time matching system depends on these notifications.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Cost</div><div class="d-value">₹0 — Always free</div></div>
+        <div class="detail-item"><div class="d-label">Limits</div><div class="d-value">No limit — works for any number of users</div></div>
+        <div class="detail-item"><div class="d-label">Action Required</div><div class="d-value">Create a free Firebase account</div></div>
+        <div class="detail-item"><div class="d-label">Paid To</div><div class="d-value">Nobody — completely free</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 5 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">5</div>
+      <div class="card-title-block">
+        <div class="card-title">DLT Registration — Indian Government Requirement</div>
+        <div class="card-provider">Provider: Jio / Airtel / Vodafone DLT Portal &nbsp;|&nbsp; Mandated by TRAI</div>
+      </div>
+      <div class="cost-badge onetime">~₹500 — One-time + 7 days wait</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> India's telecom regulator (TRAI) passed a law that says any business sending SMS messages to customers must register themselves officially. This is to prevent spam and fraud. It's like getting a trade license before you can operate.</p>
+      <p><strong>Why you cannot skip it:</strong> If you skip DLT registration, every OTP message your app tries to send will be blocked by Jio, Airtel, and Vodafone automatically. No user will be able to log in because they'll never receive their OTP code. This is a legal requirement — not optional.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Cost</div><div class="d-value">~₹500 (processing fee)</div></div>
+        <div class="detail-item"><div class="d-label">Time to Approve</div><div class="d-value">5–7 business days</div></div>
+        <div class="detail-item"><div class="d-label">What You Register</div><div class="d-value">Your company name + SMS template</div></div>
+        <div class="detail-item"><div class="d-label">Where to Register</div><div class="d-value">Jio / Airtel / Vodafone DLT portal</div></div>
+      </div>
+      <div class="alert-box">
+        <strong>Start this first — before anything else.</strong> DLT approval takes 5–7 business days and blocks your entire launch if delayed. This should be the very first step.
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 6 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">6</div>
+      <div class="card-title-block">
+        <div class="card-title">MSG91 — SMS Service for OTP Login</div>
+        <div class="card-provider">Provider: MSG91 &nbsp;|&nbsp; msg91.com</div>
+      </div>
+      <div class="cost-badge variable">₹5,000–15,000/month (varies)</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> When a user opens your app and enters their phone number to log in, they receive a 6-digit code (OTP) via SMS. MSG91 is the company that delivers this SMS to any Indian mobile number within seconds. You pay per SMS sent — like a postage stamp per letter.</p>
+      <p><strong>Why you cannot skip it:</strong> Your app uses phone number + OTP as the only way to log in (no passwords). Without an SMS service, users cannot log in at all. MSG91 is India's leading SMS provider with the best delivery rates and DLT compliance built in.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Cost per SMS</div><div class="d-value">~₹0.20 per OTP message</div></div>
+        <div class="detail-item"><div class="d-label">For 1 Lakh Users</div><div class="d-value">~₹5,000–15,000/month</div></div>
+        <div class="detail-item"><div class="d-label">Paid How Often</div><div class="d-value">Pay as you use (recharge wallet)</div></div>
+        <div class="detail-item"><div class="d-label">Paid To</div><div class="d-value">MSG91 (UPI / Net Banking)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 7 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">7</div>
+      <div class="card-title-block">
+        <div class="card-title">Twilio — Backup SMS Service</div>
+        <div class="card-provider">Provider: Twilio &nbsp;|&nbsp; twilio.com</div>
+      </div>
+      <div class="cost-badge onetime">₹1,700 — Reserve Credit</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> Twilio is a backup SMS service that automatically kicks in if MSG91 ever has a technical problem. It's like having a spare tyre in your car — you hope you never need it, but you're glad it's there. The app is already coded to switch to Twilio automatically if MSG91 fails, without anyone needing to do anything manually.</p>
+      <p><strong>Why you cannot skip it:</strong> For a healthcare app dealing with emergencies, a donor not receiving their OTP because your SMS service had an outage is unacceptable. Twilio ensures there is always a second route for delivering OTPs.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Initial Credit</div><div class="d-value">~$20 (~₹1,700) — keep as buffer</div></div>
+        <div class="detail-item"><div class="d-label">When Used</div><div class="d-value">Only if MSG91 goes down</div></div>
+        <div class="detail-item"><div class="d-label">How It Works</div><div class="d-value">Fully automatic — no manual action</div></div>
+        <div class="detail-item"><div class="d-label">Paid To</div><div class="d-value">Twilio (credit card)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 3 — SERVER & INFRASTRUCTURE        -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-title break-before">Part 3 — The Engine That Runs the App</div>
+
+  <!-- Card 8 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">8</div>
+      <div class="card-title-block">
+        <div class="card-title">Railway — App Server &amp; Database</div>
+        <div class="card-provider">Provider: Railway &nbsp;|&nbsp; railway.app</div>
+      </div>
+      <div class="cost-badge">₹5,800–8,300/month</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> Your app needs a powerful computer running 24 hours a day, 7 days a week — one that stores all user data (donor profiles, blood requests, hospital info) and responds instantly when anyone opens the app. Railway is like renting that computer online. You don't buy the computer; you just pay monthly to use it.</p>
+      <p><strong>Railway handles 4 things for your app:</strong></p>
+      <p><strong>(a) API Server</strong> — The brain that processes all requests. When a user posts a blood request, this server finds matching donors nearby and notifies them.</p>
+      <p><strong>(b) Worker</strong> — A background assistant that handles tasks like sending notifications, escalating requests to farther donors if no one responds nearby, and cleaning up expired requests.</p>
+      <p><strong>(c) Database (PostgreSQL)</strong> — The filing cabinet where all permanent data lives: user accounts, blood requests, donation history, match records, etc.</p>
+      <p><strong>(d) Cache (Redis)</strong> — A quick-access memory that makes the app respond faster. For example, it stores recent nearby requests so users don't wait long when they open the app.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Monthly Cost</div><div class="d-value">~$70–100 (~₹5,800–8,300)</div></div>
+        <div class="detail-item"><div class="d-label">Paid How Often</div><div class="d-value">Every month</div></div>
+        <div class="detail-item"><div class="d-label">Handles</div><div class="d-value">Server + Database + Cache + Worker</div></div>
+        <div class="detail-item"><div class="d-label">Capacity</div><div class="d-value">Easily handles 1 lakh users</div></div>
+      </div>
+      <div class="alert-box">
+        <strong>Note:</strong> Railway's pricing is based on actual usage (like electricity — you pay for what you use). ₹5,800–8,300/month is an estimate for 1 lakh users. It may be lower in early months when usage is less.
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 9 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">9</div>
+      <div class="card-title-block">
+        <div class="card-title">Domain Name — Your App's Internet Address</div>
+        <div class="card-provider">Provider: GoDaddy / Namecheap / BigRock</div>
+      </div>
+      <div class="cost-badge onetime">₹800–2,000/year</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> Just like every shop has a physical address, your app's server needs an internet address. Instead of users' phones connecting to a random number like "192.168.1.1", they connect to something readable like <strong>api.yourappname.in</strong>. This address is called a domain name.</p>
+      <p><strong>Why you cannot skip it:</strong> Without a domain name, you cannot set up proper HTTPS security (the padlock that shows your connection is safe). You also cannot change your hosting provider later without breaking everything — a domain name gives you flexibility.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Suggested Domain</div><div class="d-value">yourappname.in or .com</div></div>
+        <div class="detail-item"><div class="d-label">Cost</div><div class="d-value">₹800–2,000/year</div></div>
+        <div class="detail-item"><div class="d-label">Renewed How Often</div><div class="d-value">Every year</div></div>
+        <div class="detail-item"><div class="d-label">Where to Buy</div><div class="d-value">GoDaddy, BigRock, Namecheap</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 10 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">10</div>
+      <div class="card-title-block">
+        <div class="card-title">Cloudflare — Security Shield &amp; Speed Booster</div>
+        <div class="card-provider">Provider: Cloudflare &nbsp;|&nbsp; cloudflare.com</div>
+      </div>
+      <div class="cost-badge free">Free</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> Cloudflare sits between your users and your server like a security guard at the entrance. It does three things at no cost: (1) Protects your server from hacker attacks and bots, (2) Makes the app faster for users across India by caching data closer to them, and (3) Provides the green padlock (HTTPS) security that users see — meaning all data is encrypted.</p>
+      <p><strong>Why you cannot skip it:</strong> Without Cloudflare, your server is exposed directly to the internet — vulnerable to attacks that could bring the whole app down. Also, HTTPS is required by both Google Play and Apple App Store.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Cost</div><div class="d-value">₹0 — Free plan is sufficient</div></div>
+        <div class="detail-item"><div class="d-label">What It Does</div><div class="d-value">Security + HTTPS + Speed</div></div>
+        <div class="detail-item"><div class="d-label">Setup Time</div><div class="d-value">~30 minutes (one-time)</div></div>
+        <div class="detail-item"><div class="d-label">Paid To</div><div class="d-value">Nobody — completely free</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 4 — MONITORING                     -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-title">Part 4 — Keeping an Eye on the App</div>
+
+  <!-- Card 11 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-number">11</div>
+      <div class="card-title-block">
+        <div class="card-title">Sentry — Error Alert System</div>
+        <div class="card-provider">Provider: Sentry &nbsp;|&nbsp; sentry.io</div>
+      </div>
+      <div class="cost-badge">₹2,200/month</div>
+    </div>
+    <div class="card-body">
+      <p><strong>What this is in simple words:</strong> Sentry is like a smoke detector for your app. The moment something breaks — for example, if users can't log in, or a blood request fails to get posted — Sentry immediately alerts your technical team by email with the exact details of what went wrong and where. Without Sentry, you'd only find out something is broken when users start calling to complain.</p>
+      <p><strong>Why you cannot skip it:</strong> For an emergency healthcare app, you need to know about problems within seconds, not hours. Sentry makes this possible. It also helps your technical team fix bugs 10x faster because it shows the exact line of code that failed.</p>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="d-label">Cost</div><div class="d-value">$26/month (~₹2,200)</div></div>
+        <div class="detail-item"><div class="d-label">Paid How Often</div><div class="d-value">Every month</div></div>
+        <div class="detail-item"><div class="d-label">What You Get</div><div class="d-value">Real-time error alerts + reports</div></div>
+        <div class="detail-item"><div class="d-label">Paid To</div><div class="d-value">Sentry (credit card)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- COST SUMMARY                               -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-title break-before">Cost Summary</div>
+
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Service</th>
+        <th>What It Does (Short)</th>
+        <th>Frequency</th>
+        <th class="cost-cell">Cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>Google Play Console</strong></td>
+        <td>Publish app for Android users</td>
+        <td><span class="tag onetime">One-time</span></td>
+        <td class="cost-cell">₹2,100</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>Apple Developer Program</strong></td>
+        <td>Publish app for iPhone users</td>
+        <td><span class="tag annual">Annual</span></td>
+        <td class="cost-cell">₹8,300/yr</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>Expo EAS Build</strong></td>
+        <td>Packages app for Android &amp; iOS</td>
+        <td><span class="tag monthly">Monthly</span></td>
+        <td class="cost-cell">₹8,300/mo</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>Firebase</strong></td>
+        <td>Sends push notifications to donors</td>
+        <td><span class="tag free">Free</span></td>
+        <td class="cost-cell">₹0</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><strong>DLT Registration</strong></td>
+        <td>Legal requirement to send SMS in India</td>
+        <td><span class="tag onetime">One-time</span></td>
+        <td class="cost-cell">~₹500</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><strong>MSG91 (SMS / OTP)</strong></td>
+        <td>Delivers login OTPs to users</td>
+        <td><span class="tag variable">Variable</span></td>
+        <td class="cost-cell">₹5,000–15,000/mo</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><strong>Twilio (Backup SMS)</strong></td>
+        <td>Backup OTP delivery if MSG91 fails</td>
+        <td><span class="tag onetime">One-time credit</span></td>
+        <td class="cost-cell">~₹1,700</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><strong>Railway (Server + DB + Redis)</strong></td>
+        <td>Runs the entire backend 24/7</td>
+        <td><span class="tag monthly">Monthly</span></td>
+        <td class="cost-cell">₹5,800–8,300/mo</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><strong>Domain Name</strong></td>
+        <td>Internet address for your server</td>
+        <td><span class="tag annual">Annual</span></td>
+        <td class="cost-cell">₹800–2,000/yr</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><strong>Cloudflare</strong></td>
+        <td>Security + HTTPS + Speed boost</td>
+        <td><span class="tag free">Free</span></td>
+        <td class="cost-cell">₹0</td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td><strong>Sentry (Error Monitoring)</strong></td>
+        <td>Alerts team when something breaks</td>
+        <td><span class="tag monthly">Monthly</span></td>
+        <td class="cost-cell">₹2,200/mo</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Total Cost Box -->
+  <div class="cost-summary">
+    <div class="cost-summary-header">&#128200; Estimated Total Monthly Spend (at 1 Lakh Users)</div>
+    <div class="cost-summary-body">
+      <div class="cost-row">
+        <div class="label-col">EAS Build Service</div>
+        <div class="value-col">₹8,300/month</div>
+      </div>
+      <div class="cost-row">
+        <div class="label-col">Railway (Server + Database + Cache + Worker)</div>
+        <div class="value-col">~₹7,000/month</div>
+      </div>
+      <div class="cost-row">
+        <div class="label-col">MSG91 SMS (OTP messages — varies with login activity)</div>
+        <div class="value-col">₹5,000–15,000/month</div>
+      </div>
+      <div class="cost-row">
+        <div class="label-col">Sentry Error Monitoring</div>
+        <div class="value-col">₹2,200/month</div>
+      </div>
+      <div class="cost-row">
+        <div class="label-col">Firebase, Cloudflare (Push Notifications + Security)</div>
+        <div class="value-col">₹0 (Free)</div>
+      </div>
+      <div class="cost-row total-row">
+        <div class="label-col"><strong>TOTAL MONTHLY ESTIMATE</strong></div>
+        <div class="value-col">₹22,500 – ₹32,500/month</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cost-summary" style="margin-top:14px; border-color:#2980b9;">
+    <div class="cost-summary-header" style="background:#2980b9;">&#128197; One-Time Setup Costs (pay once, before launch)</div>
+    <div class="cost-summary-body">
+      <div class="cost-row">
+        <div class="label-col">Google Play Store registration</div>
+        <div class="value-col">₹2,100</div>
+      </div>
+      <div class="cost-row">
+        <div class="label-col">DLT Registration (SMS law compliance)</div>
+        <div class="value-col">~₹500</div>
+      </div>
+      <div class="cost-row">
+        <div class="label-col">Twilio backup credit (emergency buffer)</div>
+        <div class="value-col">~₹1,700</div>
+      </div>
+      <div class="cost-row">
+        <div class="label-col">Domain name (first year)</div>
+        <div class="value-col">~₹1,500</div>
+      </div>
+      <div class="cost-row total-row">
+        <div class="label-col"><strong>TOTAL ONE-TIME SETUP</strong></div>
+        <div class="value-col" style="color:#2980b9;">~₹5,800</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- IMPORTANT NOTES                            -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-title">Important Notes Before You Start</div>
+
+  <div class="notes-grid">
+    <div class="note-card red">
+      <div class="note-icon">⚡</div>
+      <div class="note-title">Start DLT Registration Today</div>
+      <div class="note-body">DLT registration with Jio/Airtel/Vodafone takes 5–7 business days for government approval. This is the one thing that cannot be rushed. Everything else can be set up in a day, but DLT blocks your entire launch if not done in advance.</div>
+    </div>
+    <div class="note-card blue">
+      <div class="note-icon">📱</div>
+      <div class="note-title">Apple Requires Annual Renewal</div>
+      <div class="note-body">Apple charges $99 every year without exception. Set a calendar reminder 30 days before the renewal date. If payment fails and the account lapses, your app is removed from the App Store for all iPhone users.</div>
+    </div>
+    <div class="note-card green">
+      <div class="note-icon">💰</div>
+      <div class="note-title">SMS Costs Depend on Usage</div>
+      <div class="note-body">MSG91 charges per OTP sent. Costs go up if users log in frequently or if OTPs are resent multiple times. The ₹5,000–15,000 estimate assumes average login behavior. Keep the MSG91 wallet topped up — it works like a prepaid balance.</div>
+    </div>
+    <div class="note-card yellow">
+      <div class="note-icon">📈</div>
+      <div class="note-title">Costs Will Stay Low Initially</div>
+      <div class="note-body">In the first few months, when user numbers are growing gradually, Railway and SMS costs will be on the lower end of the estimates. The numbers above represent steady-state costs at 1 lakh active users.</div>
+    </div>
+  </div>
+
+  <!-- ══ ACTION CHECKLIST ══ -->
+  <div class="section-title" style="margin-top:28px;">Action Checklist — In Order</div>
+
+  <div class="card" style="border-color:#c0392b;">
+    <div class="card-body">
+      <table style="width:100%; font-size:10pt; border-collapse:collapse;">
+        <tr style="background:#fafafa;">
+          <th style="padding:8px 12px; text-align:left; width:36px; color:#c0392b;">Step</th>
+          <th style="padding:8px 12px; text-align:left; color:#c0392b;">Action</th>
+          <th style="padding:8px 12px; text-align:left; color:#c0392b;">Timeline</th>
+        </tr>
+        <tr style="border-top:1px solid #eee;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">1</td>
+          <td style="padding:9px 12px;"><strong>Register on DLT portal</strong> (Jio/Airtel/Vodafone) with your company details</td>
+          <td style="padding:9px 12px; color:#888;">Day 1 — Do immediately</td>
+        </tr>
+        <tr style="border-top:1px solid #eee; background:#fafafa;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">2</td>
+          <td style="padding:9px 12px;"><strong>Create Firebase account</strong> (google account needed) and set up a new project</td>
+          <td style="padding:9px 12px; color:#888;">Day 1 — 30 minutes</td>
+        </tr>
+        <tr style="border-top:1px solid #eee;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">3</td>
+          <td style="padding:9px 12px;"><strong>Register Google Play Console</strong> — pay $25 and create developer account</td>
+          <td style="padding:9px 12px; color:#888;">Day 1–2</td>
+        </tr>
+        <tr style="border-top:1px solid #eee; background:#fafafa;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">4</td>
+          <td style="padding:9px 12px;"><strong>Register Apple Developer Program</strong> — requires Apple ID and annual $99 payment</td>
+          <td style="padding:9px 12px; color:#888;">Day 1–3 (Apple takes 2 days to verify)</td>
+        </tr>
+        <tr style="border-top:1px solid #eee;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">5</td>
+          <td style="padding:9px 12px;"><strong>Register MSG91 account</strong> and link your DLT-approved sender ID and template</td>
+          <td style="padding:9px 12px; color:#888;">After DLT is approved (~Day 8)</td>
+        </tr>
+        <tr style="border-top:1px solid #eee; background:#fafafa;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">6</td>
+          <td style="padding:9px 12px;"><strong>Register Twilio account</strong> and add ₹1,700 credit as backup</td>
+          <td style="padding:9px 12px; color:#888;">Day 3–5</td>
+        </tr>
+        <tr style="border-top:1px solid #eee;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">7</td>
+          <td style="padding:9px 12px;"><strong>Buy domain name</strong> (e.g. yourappname.in) from GoDaddy or BigRock</td>
+          <td style="padding:9px 12px; color:#888;">Day 2–3</td>
+        </tr>
+        <tr style="border-top:1px solid #eee; background:#fafafa;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">8</td>
+          <td style="padding:9px 12px;"><strong>Create Railway account</strong> (free to sign up, pay when you deploy)</td>
+          <td style="padding:9px 12px; color:#888;">Before technical deployment</td>
+        </tr>
+        <tr style="border-top:1px solid #eee;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">9</td>
+          <td style="padding:9px 12px;"><strong>Create Cloudflare account</strong> and point domain to it (free setup)</td>
+          <td style="padding:9px 12px; color:#888;">After domain purchase</td>
+        </tr>
+        <tr style="border-top:1px solid #eee; background:#fafafa;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">10</td>
+          <td style="padding:9px 12px;"><strong>Create Expo (EAS) account</strong> and subscribe to Production plan</td>
+          <td style="padding:9px 12px; color:#888;">Before first app build</td>
+        </tr>
+        <tr style="border-top:1px solid #eee;">
+          <td style="padding:9px 12px; font-weight:700; color:#c0392b;">11</td>
+          <td style="padding:9px 12px;"><strong>Create Sentry account</strong> and subscribe to Team plan</td>
+          <td style="padding:9px 12px; color:#888;">Before going live</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Prepared for Client &nbsp;|&nbsp; Blood Donation App — Subscription &amp; Services Plan &nbsp;|&nbsp; June 2026<br>
+    All costs are estimates in INR based on June 2026 exchange rates (1 USD ≈ ₹84). Actual costs may vary slightly.
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>

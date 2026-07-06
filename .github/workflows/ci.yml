@@ -1,0 +1,192 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, 'feature/**']
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Backend: lint → unit tests → e2e tests → build
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: blooddonation_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/blooddonation_test
+      # DIRECT_URL = same local URL in CI (no pooler on local Postgres)
+      DIRECT_URL: postgresql://test:test@localhost:5432/blooddonation_test
+      REDIS_URL: redis://localhost:6379
+      NODE_ENV: test
+      JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY_TEST }}
+      JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY_TEST }}
+      JWT_ACCESS_TTL: 900
+      JWT_REFRESH_TTL: 604800
+      SMS_PROVIDER: console
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --workspace=apps/backend
+
+      - name: Run Prisma migrations (test DB)
+        run: npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: Lint
+        run: npm run lint --workspace=apps/backend
+
+      - name: Unit tests
+        run: npm run test:unit --workspace=apps/backend -- --coverage
+
+      - name: Integration + E2E tests
+        run: npm run test:integration --workspace=apps/backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/blooddonation_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: Build
+        run: npm run build --workspace=apps/backend
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          flags: backend
+
+  # ---------------------------------------------------------------------------
+  # Mobile: TypeScript type-check
+  # ---------------------------------------------------------------------------
+  mobile-typecheck:
+    name: Mobile Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --workspace=apps/mobile
+      - run: npx tsc --noEmit
+        working-directory: apps/mobile
+
+  # ---------------------------------------------------------------------------
+  # Deploy to staging (develop branch only)
+  # NOTE: Add a second VPS entry or separate staging secrets when a staging
+  # environment is available. Until then this step is intentionally skipped.
+  # ---------------------------------------------------------------------------
+  deploy-staging:
+    name: Deploy → Staging
+    needs: [backend, mobile-typecheck]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    steps:
+      - name: Staging deploy not yet configured
+        run: |
+          echo "Staging VPS not configured. Set up VPS_HOST_STAGING / VPS_USER_STAGING"
+          echo "/ VPS_SSH_KEY_STAGING secrets and replace this step with the SSH deploy"
+          echo "block from the deploy-production job below."
+
+  # ---------------------------------------------------------------------------
+  # Deploy to production (main branch, manual approval required)
+  # Secrets required (set in GitHub → Settings → Secrets → Actions):
+  #   VPS_HOST           — VPS IP address
+  #   VPS_USER           — deploy user on VPS (e.g. "deploy")
+  #   VPS_SSH_KEY        — ed25519 private key for that user
+  #   VPS_HEALTH_URL     — full health-check URL, e.g. https://api.yourdomain.com/health
+  #   DATABASE_URL_PROD  — Neon pooler connection string (app runtime)
+  #   DIRECT_URL_PROD    — Neon direct (non-pooler) connection string (prisma migrate)
+  # ---------------------------------------------------------------------------
+  deploy-production:
+    name: Deploy → Production (VPS)
+    needs: [backend, mobile-typecheck]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production   # requires manual approval in GitHub settings
+
+    steps:
+      - name: Deploy to Hostinger VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DATABASE_URL_PROD: ${{ secrets.DATABASE_URL_PROD }}
+          DIRECT_URL_PROD: ${{ secrets.DIRECT_URL_PROD }}
+          HEALTH_URL: ${{ secrets.VPS_HEALTH_URL }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: DATABASE_URL_PROD,DIRECT_URL_PROD,HEALTH_URL
+          script: |
+            set -euo pipefail
+            cd /home/$USER/blood-donation
+
+            # ── 1. Save current commit for rollback ──────────────────────────
+            PREV_COMMIT=$(git rev-parse HEAD)
+            echo "[deploy] previous commit: $PREV_COMMIT"
+
+            # ── 2. Pull latest code ──────────────────────────────────────────
+            git pull origin main
+
+            # ── 3. Install / update dependencies ────────────────────────────
+            npm ci --workspace=apps/backend
+
+            # ── 4. Generate Prisma client ────────────────────────────────────
+            npx prisma generate --schema=prisma/schema.prisma
+
+            # ── 5. Run pending migrations (via DIRECT_URL — bypasses pooler) ─
+            DATABASE_URL="$DATABASE_URL_PROD" DIRECT_URL="$DIRECT_URL_PROD" \
+              npx prisma migrate deploy --schema=prisma/schema.prisma
+
+            # ── 6. Build TypeScript ──────────────────────────────────────────
+            npm run build --workspace=apps/backend
+
+            # ── 7. Zero-downtime reload ──────────────────────────────────────
+            pm2 reload ecosystem.config.js --update-env
+
+            # ── 8. Health check ──────────────────────────────────────────────
+            echo "[deploy] waiting for processes to stabilise..."
+            sleep 8
+            HTTP_CODE=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+              --max-time 15 "$HEALTH_URL")
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "[deploy] health check returned $HTTP_CODE — rolling back"
+              git checkout "$PREV_COMMIT"
+              npm run build --workspace=apps/backend
+              pm2 reload ecosystem.config.js --update-env
+              exit 1
+            fi
+
+            echo "[deploy] health check OK ($HTTP_CODE) — deploy complete"
