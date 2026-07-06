@@ -24,6 +24,7 @@ export interface UserDto {
   role: UserRole;
   verifStatus: VerifStatus;
   createdAt: string;
+  [key: string]: unknown;
 }
 
 export interface DonorProfileDto {
