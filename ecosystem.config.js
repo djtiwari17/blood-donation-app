@@ -12,17 +12,39 @@
  *
  * Environment:
  *   Secrets live in /etc/blood-donation/.env (chmod 600, owned by deploy user).
- *   PM2 reads env_file at start/reload; never commit real .env to git.
+ *   PM2 has no built-in "env_file" option — this file is parsed manually below
+ *   and injected via the standard `env` key so both processes get it at
+ *   start/reload time. Never commit the real .env to git.
  */
+
+const fs = require('fs');
 
 const ENV_FILE = '/etc/blood-donation/.env';
 const LOG_DIR = '/var/log/blood-donation';
+
+function loadEnvFile(filePath) {
+  const env = {};
+  if (!fs.existsSync(filePath)) return env;
+  for (const line of fs.readFileSync(filePath, 'utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    env[key] = value;
+  }
+  return env;
+}
 
 const COMMON = {
   interpreter: 'node',
   exec_mode: 'fork',
   instances: 1,
-  env_file: ENV_FILE,
+  env: loadEnvFile(ENV_FILE),
   max_memory_restart: '512M',
   restart_delay: 3000,
   max_restarts: 10,
