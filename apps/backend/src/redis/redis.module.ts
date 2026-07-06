@@ -3,7 +3,10 @@ import { RedisService } from './redis.service';
 
 @Global()
 @Module({
-  providers: [RedisService],
-  exports: [RedisService],
+  providers: [
+    RedisService,
+    { provide: 'REDIS', useExisting: RedisService },
+  ],
+  exports: [RedisService, 'REDIS'],
 })
 export class RedisModule {}

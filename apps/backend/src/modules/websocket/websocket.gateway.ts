@@ -77,7 +77,7 @@ export class WebSocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   // ── Client → server events ───────────────────────────────────────────────────
 
   @SubscribeMessage('ping')
-  handlePing(@ConnectedSocket() client: Socket, @MessageBody() data: unknown) {
+  handlePing(@ConnectedSocket() client: Socket, @MessageBody() _data: unknown) {
     client.emit('pong', { ts: Date.now() });
   }
 }

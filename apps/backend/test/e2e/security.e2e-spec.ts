@@ -47,23 +47,22 @@ const SKIP = !process.env.DATABASE_URL || !process.env.REDIS_URL;
 
   // ── Rate limits (Blueprint §9.3) ──────────────────────────────────────────────
 
-  describe('send-otp rate limit: 5 per hour per IP', () => {
-    it('blocks the 6th OTP request from the same IP within an hour', async () => {
+  describe('send-otp rate limit: 5 per hour per phone', () => {
+    it('blocks the 6th OTP request to the same phone within an hour', async () => {
       const phone = '+8890000001';
 
-      // Exhaust the limit: 5 successful sends
+      // Exhaust the limit: 5 successful sends to the SAME phone
       for (let i = 0; i < 5; i++) {
         await request(app.getHttpServer())
           .post('/auth/send-otp')
-          .send({ phone: `+889000000${i}` })
+          .send({ phone })
           .expect(201);
       }
 
-      // 6th request should be rate-limited
-      // Note: per-IP rate limit means the 6th call on same IP is blocked
+      // 6th request to the same phone must be rate-limited (per-phone limit is 5/hour)
       const res = await request(app.getHttpServer())
         .post('/auth/send-otp')
-        .send({ phone: '+8890000099' });
+        .send({ phone });
 
       expect(res.status).toBe(429);
     });

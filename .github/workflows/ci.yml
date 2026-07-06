@@ -60,6 +60,13 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Generate test JWT keys
+        run: |
+          openssl genrsa -out /tmp/jwt_private.pem 2048 2>/dev/null
+          openssl rsa -in /tmp/jwt_private.pem -pubout -out /tmp/jwt_public.pem 2>/dev/null
+          echo "JWT_PRIVATE_KEY=$(base64 -w 0 /tmp/jwt_private.pem)" >> $GITHUB_ENV
+          echo "JWT_PUBLIC_KEY=$(base64 -w 0 /tmp/jwt_public.pem)" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: npm ci --workspace=apps/backend
 
