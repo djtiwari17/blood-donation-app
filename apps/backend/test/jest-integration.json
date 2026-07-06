@@ -12,5 +12,6 @@
     "^@prisma/client/runtime/library$": "<rootDir>/node_modules/.prisma/client/runtime/library.js"
   },
   "testTimeout": 30000,
-  "maxWorkers": 1
+  "maxWorkers": 1,
+  "forceExit": true
 }
