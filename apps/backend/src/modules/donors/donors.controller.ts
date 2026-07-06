@@ -21,6 +21,11 @@ export class DonorsController {
     return this.donorsService.getProfile(user.id);
   }
 
+  @Patch('availability')
+  toggleAvailability(@CurrentUser() user: User, @Body() dto: UpdateDonorProfileDto) {
+    return this.donorsService.updateProfile(user.id, dto);
+  }
+
   @Patch('profile')
   updateProfile(@CurrentUser() user: User, @Body() dto: UpdateDonorProfileDto) {
     return this.donorsService.updateProfile(user.id, dto);

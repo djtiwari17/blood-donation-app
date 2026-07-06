@@ -23,14 +23,14 @@ export class AuthController {
 
   @Public()
   @Post('send-otp')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   sendOtp(@Body() dto: SendOtpDto) {
     return this.authService.sendOtp(dto.phone);
   }
 
   @Public()
   @Post('verify-otp')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.authService.verifyOtp(dto.phone, dto.code);
   }

@@ -2,8 +2,8 @@ import { IsString, Matches } from 'class-validator';
 
 export class SendOtpDto {
   @IsString()
-  @Matches(/^\+91[6-9]\d{9}$/, {
-    message: 'Phone must be a valid Indian mobile number in +91XXXXXXXXXX format',
+  @Matches(/^\+\d{7,15}$/, {
+    message: 'Phone must be in E.164 format, e.g. +919876543210',
   })
   phone: string;
 }
