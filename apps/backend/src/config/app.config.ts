@@ -15,12 +15,12 @@ export const appConfigSchema = Joi.object({
   JWT_REFRESH_TTL: Joi.number().default(604800),
 
   SMS_PROVIDER: Joi.string().valid('console', 'msg91', 'twilio').default('console'),
-  MSG91_AUTH_KEY: Joi.string().when('SMS_PROVIDER', { is: 'msg91', then: Joi.required() }),
-  MSG91_SENDER_ID: Joi.string().when('SMS_PROVIDER', { is: 'msg91', then: Joi.required() }),
-  MSG91_TEMPLATE_ID: Joi.string().when('SMS_PROVIDER', { is: 'msg91', then: Joi.required() }),
-  TWILIO_ACCOUNT_SID: Joi.string().when('SMS_PROVIDER', { is: 'twilio', then: Joi.required() }),
-  TWILIO_AUTH_TOKEN: Joi.string().when('SMS_PROVIDER', { is: 'twilio', then: Joi.required() }),
-  TWILIO_FROM_NUMBER: Joi.string().when('SMS_PROVIDER', { is: 'twilio', then: Joi.required() }),
+  MSG91_AUTH_KEY: Joi.string().when('SMS_PROVIDER', { is: 'msg91', then: Joi.required(), otherwise: Joi.allow('') }),
+  MSG91_SENDER_ID: Joi.string().when('SMS_PROVIDER', { is: 'msg91', then: Joi.required(), otherwise: Joi.allow('') }),
+  MSG91_TEMPLATE_ID: Joi.string().when('SMS_PROVIDER', { is: 'msg91', then: Joi.required(), otherwise: Joi.allow('') }),
+  TWILIO_ACCOUNT_SID: Joi.string().when('SMS_PROVIDER', { is: 'twilio', then: Joi.required(), otherwise: Joi.allow('') }),
+  TWILIO_AUTH_TOKEN: Joi.string().when('SMS_PROVIDER', { is: 'twilio', then: Joi.required(), otherwise: Joi.allow('') }),
+  TWILIO_FROM_NUMBER: Joi.string().when('SMS_PROVIDER', { is: 'twilio', then: Joi.required(), otherwise: Joi.allow('') }),
 
   NOMINATIM_BASE_URL: Joi.string().default('https://nominatim.openstreetmap.org'),
 
