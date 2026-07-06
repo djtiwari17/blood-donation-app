@@ -9,7 +9,7 @@ import { AuthStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius, shadow } from '../../theme';
 import { Button } from '../../components/Button';
 import { authApi, ExistingUserResult, NewUserResult } from '../../api/auth.api';
-import { useAuthStore } from '../../store/auth.store';
+import { useAuthStore, StoredUser } from '../../store/auth.store';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'OTP'>;
@@ -68,7 +68,7 @@ export const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
         // Existing user: save tokens and navigate to app
         const existing = result as ExistingUserResult;
         await setAuth(
-          existing.user as Record<string, unknown>,
+          existing.user as StoredUser,
           existing.accessToken,
           existing.refreshToken,
         );

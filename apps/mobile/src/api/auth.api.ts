@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { BloodGroup, Gender } from '@blood-donation/types';
+import { BloodGroup, Gender, UserDto } from '@blood-donation/types';
 
 export interface SendOtpResponse {
   success: boolean;
@@ -19,7 +19,7 @@ export interface ExistingUserResult {
   isNewUser: false;
   accessToken: string;
   refreshToken: string;
-  user: object;
+  user: UserDto;
 }
 
 export interface RegisterPayload {
@@ -34,7 +34,7 @@ export interface RegisterPayload {
 
 export interface RegisterResponse {
   success: boolean;
-  data: { accessToken: string; refreshToken: string; user: object };
+  data: { accessToken: string; refreshToken: string; user: UserDto };
 }
 
 export const authApi = {
