@@ -37,7 +37,13 @@ export class WebSocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     pubClient.on('error', (err) => this.logger.error('WS Redis pub error', err.message));
     subClient.on('error', (err) => this.logger.error('WS Redis sub error', err.message));
 
-    server.adapter(createAdapter(pubClient, subClient));
+    // socket.io v4.7+ changed adapter from a callable method to a getter/setter
+    const adapterFactory = createAdapter(pubClient, subClient);
+    if (typeof (server as any).adapter === 'function') {
+      (server as any).adapter(adapterFactory);
+    } else {
+      (server as any).adapter = adapterFactory;
+    }
     this.logger.log('WebSocket gateway initialized with Redis adapter');
   }
 
