@@ -52,7 +52,15 @@ export class AuthService {
       );
     }
 
-    const code = randomInt(100_000, 1_000_000).toString().padStart(6, '0');
+    // Soft-launch stand-in: without a real SMS provider configured, testers
+    // have no way to see a random code (it only reaches the server logs), so
+    // fall back to a fixed code every tester can use. Remove once MSG91/
+    // Twilio credentials are configured (SMS_PROVIDER=console goes away).
+    const smsProvider = this.config.get<string>('SMS_PROVIDER') ?? 'console';
+    const code =
+      smsProvider === 'console'
+        ? '123456'
+        : randomInt(100_000, 1_000_000).toString().padStart(6, '0');
     const hash = await bcrypt.hash(code, 10);
 
     await this.redis.setex(`otp:${phone}`, 300, JSON.stringify({ hash, attempts: 0 }));
