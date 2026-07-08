@@ -15,6 +15,8 @@
  *   PM2 has no built-in "env_file" option — this file is parsed manually below
  *   and injected via the standard `env` key so both processes get it at
  *   start/reload time. Never commit the real .env to git.
+ *
+ * CI/CD: deployed via GitHub Actions' deploy-production job on push to main.
  */
 
 const fs = require('fs');
