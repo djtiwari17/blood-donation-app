@@ -5,7 +5,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { appConfig, appConfigSchema } from './config/app.config';
 import { RedisModule } from './redis/redis.module';
 import { DatabaseModule } from './database/database.module';
-import { MatchingModule } from './modules/matching/matching.module';
+import { MatchingWorkerModule } from './modules/matching/matching-worker.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 
 /**
@@ -51,7 +51,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 
     RedisModule,
     DatabaseModule,
-    MatchingModule,
+    MatchingWorkerModule,
     NotificationsModule,
   ],
 })
