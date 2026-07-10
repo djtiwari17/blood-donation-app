@@ -1,18 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   KeyboardAvoidingView, Platform, TouchableOpacity, Alert,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { ReceiverHomeStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius } from '../../theme';
 import { Header } from '../../components/Header';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { SelectPicker } from '../../components/SelectPicker';
+import { SearchPicker } from '../../components/SearchPicker';
 import { BLOOD_GROUPS } from '../../utils/helpers';
 import { requestsApi, CreateRequestPayload } from '../../api/requests.api';
+import { geocodingApi } from '../../api/geocoding.api';
+
+async function getDeviceLocation(): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') return null;
+    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    return { lat: loc.coords.latitude, lng: loc.coords.longitude };
+  } catch {
+    return null;
+  }
+}
 
 type Props = { navigation: NativeStackNavigationProp<ReceiverHomeStackParamList, 'CreateRequest'> };
 
@@ -27,12 +41,18 @@ const URGENCY_OPTIONS = [
 export const CreateRequestScreen: React.FC<Props> = ({ navigation }) => {
   const [patientName, setPatientName] = useState('');
   const [hospitalName, setHospitalName] = useState('');
+  const [hospitalCoords, setHospitalCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [bloodGroup, setBloodGroup] = useState('');
   const [units, setUnits] = useState('');
   const [urgency, setUrgency] = useState('');
   const [requiredBy, setRequiredBy] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [deviceLocation, setDeviceLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    getDeviceLocation().then(setDeviceLocation);
+  }, []);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -75,6 +95,7 @@ export const CreateRequestScreen: React.FC<Props> = ({ navigation }) => {
         unitsNeeded: parseInt(units, 10),
         urgency: urgency as CreateRequestPayload['urgency'],
         requiredBy: isoDate,
+        ...(hospitalCoords ? { hospitalLat: hospitalCoords.lat, hospitalLng: hospitalCoords.lng } : {}),
       };
       const request = await requestsApi.createRequest(payload);
       navigation.navigate('RequestSubmitted', { requestId: request.id });
@@ -102,12 +123,16 @@ export const CreateRequestScreen: React.FC<Props> = ({ navigation }) => {
             error={errors.patientName}
           />
 
-          <Input
+          <SearchPicker
             label="Hospital Name"
             value={hospitalName}
-            onChangeText={t => { setHospitalName(t); setErrors(e => ({ ...e, hospitalName: '' })); }}
-            placeholder="e.g. SMS Hospital, Jaipur"
-            autoCapitalize="words"
+            placeholder="Type to search hospital name"
+            search={q => geocodingApi.searchHospitals(q, deviceLocation?.lat, deviceLocation?.lng)}
+            onSelect={result => {
+              setHospitalName(result.shortName);
+              setHospitalCoords({ lat: result.lat, lng: result.lng });
+              setErrors(e => ({ ...e, hospitalName: '' }));
+            }}
             error={errors.hospitalName}
           />
 

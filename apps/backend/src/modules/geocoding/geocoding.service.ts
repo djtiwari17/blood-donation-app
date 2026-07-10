@@ -12,6 +12,20 @@ interface GeocodeResult {
   displayName: string;
 }
 
+export interface PlaceSearchResult {
+  lat: number;
+  lng: number;
+  displayName: string;
+  shortName: string;
+  state?: string;
+}
+
+function boundingBox(lat: number, lng: number, radiusKm: number): [number, number, number, number] {
+  const latDelta = radiusKm / 111;
+  const lngDelta = radiusKm / (111 * Math.cos((lat * Math.PI) / 180));
+  return [lng - lngDelta, lat + latDelta, lng + lngDelta, lat - latDelta]; // left, top, right, bottom
+}
+
 @Injectable()
 export class GeocodingService {
   private readonly logger = new Logger(GeocodingService.name);
@@ -84,6 +98,87 @@ export class GeocodingService {
       this.logger.warn(`Geocode failed: ${err.message}`);
       return null;
     }
+  }
+
+  // Multi-result place search, scoped to a state — used for the
+  // registration City picker. Not cached (GeocodeCache stores one
+  // result per query key, not a list); relies on the throttle below
+  // plus client-side debouncing to stay within Nominatim's rate limit.
+  async searchCities(query: string, state: string, limit = 8): Promise<PlaceSearchResult[]> {
+    if (!query || query.trim().length < 2) return [];
+    await this.throttle();
+    try {
+      const baseUrl = this.config.get<string>('app.nominatimBaseUrl');
+      const { data } = await axios.get(`${baseUrl}/search`, {
+        params: {
+          q: `${query}, ${state}, India`,
+          format: 'json',
+          addressdetails: 1,
+          limit,
+          countrycodes: 'in',
+          dedupe: 1,
+        },
+        headers: { 'User-Agent': USER_AGENT },
+        timeout: 6000,
+      });
+      if (!Array.isArray(data)) return [];
+      return data.map((r: any) => this.toPlaceResult(r));
+    } catch (err: any) {
+      this.logger.warn(`City search failed: ${err.message}`);
+      return [];
+    }
+  }
+
+  // Multi-result place search, optionally biased to a radius around a
+  // point — used for the hospital picker on request creation. lat/lng
+  // are omitted when the receiver denied location permission, in which
+  // case this falls back to an unbounded India-wide search rather than
+  // blocking the feature entirely.
+  async searchNearbyPlaces(
+    query: string,
+    lat?: number,
+    lng?: number,
+    radiusKm = 25,
+    limit = 8,
+  ): Promise<PlaceSearchResult[]> {
+    if (!query || query.trim().length < 2) return [];
+    await this.throttle();
+    try {
+      const baseUrl = this.config.get<string>('app.nominatimBaseUrl');
+      const params: Record<string, string | number> = {
+        q: query,
+        format: 'json',
+        addressdetails: 1,
+        limit,
+        countrycodes: 'in',
+        dedupe: 1,
+      };
+      if (lat !== undefined && lng !== undefined) {
+        const [left, top, right, bottom] = boundingBox(lat, lng, radiusKm);
+        params.viewbox = `${left},${top},${right},${bottom}`;
+        params.bounded = 1;
+      }
+      const { data } = await axios.get(`${baseUrl}/search`, {
+        params,
+        headers: { 'User-Agent': USER_AGENT },
+        timeout: 6000,
+      });
+      if (!Array.isArray(data)) return [];
+      return data.map((r: any) => this.toPlaceResult(r));
+    } catch (err: any) {
+      this.logger.warn(`Nearby place search failed: ${err.message}`);
+      return [];
+    }
+  }
+
+  private toPlaceResult(r: any): PlaceSearchResult {
+    return {
+      lat: parseFloat(r.lat),
+      lng: parseFloat(r.lon),
+      displayName: r.display_name,
+      shortName: r.name || r.display_name.split(',')[0],
+      state: r.address?.state,
+    };
   }
 
   private async throttle(): Promise<void> {

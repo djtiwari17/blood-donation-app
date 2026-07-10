@@ -8,7 +8,9 @@ import { colors, fonts, spacing } from '../../theme';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { SelectPicker } from '../../components/SelectPicker';
-import { BLOOD_GROUPS, CITIES } from '../../utils/helpers';
+import { SearchPicker } from '../../components/SearchPicker';
+import { BLOOD_GROUPS, INDIAN_STATES } from '../../utils/helpers';
+import { geocodingApi } from '../../api/geocoding.api';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Registration'>;
@@ -19,6 +21,7 @@ export const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
   const { phoneNumber } = route.params;
   const [fullName, setFullName] = useState('');
   const [bloodGroup, setBloodGroup] = useState('');
+  const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -27,6 +30,7 @@ export const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
     const e: Record<string, string> = {};
     if (!fullName.trim() || fullName.trim().length < 2) e.fullName = 'Enter your full name';
     if (!bloodGroup) e.bloodGroup = 'Select your blood group';
+    if (!state) e.state = 'Select your state';
     if (!city) e.city = 'Select your city';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -71,11 +75,26 @@ export const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
           />
 
           <SelectPicker
-            label="City / Area"
+            label="State"
+            value={state}
+            options={INDIAN_STATES}
+            placeholder="Select your state"
+            onSelect={v => {
+              setState(v);
+              setCity(''); // changing state invalidates any previously picked city
+              setErrors(e => ({ ...e, state: '' }));
+            }}
+            error={errors.state}
+          />
+
+          <SearchPicker
+            label="City / Town"
             value={city}
-            options={CITIES}
-            placeholder="Select your city"
-            onSelect={v => { setCity(v); setErrors(e => ({ ...e, city: '' })); }}
+            placeholder="Type to search your city or town"
+            disabled={!state}
+            disabledHint="Select a state first"
+            search={q => geocodingApi.searchCities(q, state)}
+            onSelect={result => { setCity(result.shortName); setErrors(e => ({ ...e, city: '' })); }}
             error={errors.city}
           />
 
