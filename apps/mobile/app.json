@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Blood Donation",
-    "slug": "blood-donation-demo",
+    "slug": "blood-donation",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -28,6 +28,12 @@
     "plugins": [
       "expo-font",
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c7323d06-3eef-4cb2-b915-15e8d9316189"
+      }
+    },
+    "owner": "redhealthcommunitys-organization"
   }
 }
