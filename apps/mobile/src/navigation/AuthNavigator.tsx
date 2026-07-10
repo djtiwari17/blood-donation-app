@@ -6,7 +6,7 @@ import { LoginScreen } from '../screens/auth/LoginScreen';
 import { OTPScreen } from '../screens/auth/OTPScreen';
 import { RegistrationScreen } from '../screens/auth/RegistrationScreen';
 import { RoleSelectionScreen } from '../screens/auth/RoleSelectionScreen';
-import { DonorProfileSetupScreen } from '../screens/donor/DonorProfileSetupScreen';
+import { DonorProfileSetupScreen } from '../screens/auth/DonorProfileSetupScreen';
 import { VerificationPendingScreen } from '../screens/common/VerificationPendingScreen';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
