@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Alert, Linking, ActivityIndicator,
+  TouchableOpacity, Alert, ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -93,12 +93,6 @@ export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
           },
         },
       ],
-    );
-  };
-
-  const handleCall = (phone: string) => {
-    Linking.openURL(`tel:${phone.replace(/\s/g, '')}`).catch(() =>
-      Alert.alert('Unable to open dialer')
     );
   };
 

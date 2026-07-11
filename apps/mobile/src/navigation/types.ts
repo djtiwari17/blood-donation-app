@@ -5,7 +5,6 @@ export type AuthStackParamList = {
   Registration: { phoneNumber: string };
   RoleSelection: { fullName: string; bloodGroup: string; city: string; phoneNumber: string };
   DonorProfileSetup: { fullName: string; bloodGroup: string; city: string; phoneNumber: string };
-  VerificationPending: undefined;
 };
 
 export type DonorHomeStackParamList = {
@@ -14,7 +13,6 @@ export type DonorHomeStackParamList = {
   RequestDetails: { requestId: string };
   Notifications: undefined;
   ReportUser: { userId: string; userName: string };
-  VerificationPendingDonor: undefined;
 };
 
 export type DonorHistoryStackParamList = {
@@ -23,10 +21,8 @@ export type DonorHistoryStackParamList = {
 
 export type DonorProfileStackParamList = {
   DonorProfile: undefined;
-  DonorProfileEdit: undefined;
   Notifications: undefined;
   ReportUser: { userId: string; userName: string };
-  VerificationPendingDonor: undefined;
 };
 
 export type ReceiverHomeStackParamList = {
@@ -37,6 +33,10 @@ export type ReceiverHomeStackParamList = {
   RequestStatus: { requestId: string };
   Notifications: undefined;
   ReportUser: { userId: string; userName: string };
+};
+
+export type ReceiverNotificationsStackParamList = {
+  Notifications: undefined;
 };
 
 export type ReceiverProfileStackParamList = {

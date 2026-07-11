@@ -10,6 +10,7 @@ import { ReceiverHomeStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius } from '../../theme';
 import { Header } from '../../components/Header';
 import { Input } from '../../components/Input';
+import { DateInput } from '../../components/DateInput';
 import { Button } from '../../components/Button';
 import { SelectPicker } from '../../components/SelectPicker';
 import { SearchPicker } from '../../components/SearchPicker';
@@ -42,6 +43,7 @@ export const CreateRequestScreen: React.FC<Props> = ({ navigation }) => {
   const [patientName, setPatientName] = useState('');
   const [hospitalName, setHospitalName] = useState('');
   const [hospitalCoords, setHospitalCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [hospitalAddress, setHospitalAddress] = useState('');
   const [bloodGroup, setBloodGroup] = useState('');
   const [units, setUnits] = useState('');
   const [urgency, setUrgency] = useState('');
@@ -96,6 +98,7 @@ export const CreateRequestScreen: React.FC<Props> = ({ navigation }) => {
         urgency: urgency as CreateRequestPayload['urgency'],
         requiredBy: isoDate,
         ...(hospitalCoords ? { hospitalLat: hospitalCoords.lat, hospitalLng: hospitalCoords.lng } : {}),
+        ...(hospitalAddress ? { hospitalAddress } : {}),
       };
       const request = await requestsApi.createRequest(payload);
       navigation.navigate('RequestSubmitted', { requestId: request.id });
@@ -131,6 +134,7 @@ export const CreateRequestScreen: React.FC<Props> = ({ navigation }) => {
             onSelect={result => {
               setHospitalName(result.shortName);
               setHospitalCoords({ lat: result.lat, lng: result.lng });
+              setHospitalAddress(result.displayName);
               setErrors(e => ({ ...e, hospitalName: '' }));
             }}
             error={errors.hospitalName}
@@ -170,12 +174,13 @@ export const CreateRequestScreen: React.FC<Props> = ({ navigation }) => {
           </View>
           {errors.urgency ? <Text style={styles.errorText}>{errors.urgency}</Text> : null}
 
-          <Input
+          <DateInput
             label="Required By"
             value={requiredBy}
             onChangeText={t => { setRequiredBy(t); setErrors(e => ({ ...e, requiredBy: '' })); }}
             placeholder="DD/MM/YYYY HH:MM  e.g. 13/06/2026 18:00"
-            rightIcon="calendar-outline"
+            mode="datetime"
+            minimumDate={new Date()}
             error={errors.requiredBy}
           />
 

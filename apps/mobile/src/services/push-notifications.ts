@@ -36,8 +36,9 @@ export async function registerForPushNotifications(): Promise<string | null> {
 export async function syncPushToken(token: string): Promise<void> {
   try {
     await apiClient.patch('/users/me', { fcmToken: token });
-  } catch {
+  } catch (err) {
     // Non-fatal — token sync can be retried on next app launch
+    console.warn('[Push] Failed to sync push token:', err);
   }
 }
 

@@ -48,10 +48,10 @@ export const DonorProfileScreen: React.FC<Props> = ({ navigation }) => {
   const isVerified = user?.verifStatus === 'VERIFIED';
 
   const menuItems = [
-    { icon: 'time-outline',           label: 'Donation History',    onPress: () => {} },
+    { icon: 'time-outline',           label: 'Donation History',    onPress: () => navigation.getParent()?.navigate('History') },
     { icon: 'notifications-outline',  label: 'Notifications',       onPress: () => navigation.navigate('Notifications') },
-    { icon: 'shield-outline',         label: 'Privacy & Safety',    onPress: () => {} },
-    { icon: 'help-circle-outline',    label: 'Help & Support',      onPress: () => {} },
+    { icon: 'shield-outline',         label: 'Privacy & Safety',    onPress: () => Alert.alert('Coming Soon', 'Privacy & Safety settings will be available in an upcoming update.') },
+    { icon: 'help-circle-outline',    label: 'Help & Support',      onPress: () => Alert.alert('Coming Soon', 'Help & Support will be available in an upcoming update.') },
   ];
 
   return (

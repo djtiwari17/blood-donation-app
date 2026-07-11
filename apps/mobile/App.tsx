@@ -4,7 +4,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SecureStore from 'expo-secure-store';
 import type { Subscription } from 'expo-notifications';
-import { AppProvider } from './src/context/AppContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useAuthStore } from './src/store/auth.store';
 import { ACCESS_TOKEN_KEY } from './src/api/client';
@@ -40,6 +39,14 @@ function AppInit() {
 
     let cancelled = false;
 
+    // Live WebSocket pushes → refresh the affected queries so the UI updates
+    // without a manual pull-to-refresh
+    const removeWsListener = wsService.addNotificationListener(() => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['nearbyRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['myRequests'] });
+    });
+
     (async () => {
       // Push notification token — register + sync to backend
       if (Platform.OS !== 'web') {
@@ -52,7 +59,9 @@ function AppInit() {
         const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
         if (accessToken) wsService.connect(accessToken);
       }
-    })().catch(() => {});
+    })().catch((err) => {
+      console.warn('[AppInit] push/WebSocket init failed:', err);
+    });
 
     // Handle notification tap when app was in background / killed
     responseListenerRef.current = addResponseListener((response) => {
@@ -63,6 +72,7 @@ function AppInit() {
 
     return () => {
       cancelled = true;
+      removeWsListener();
       responseListenerRef.current?.remove();
       responseListenerRef.current = null;
     };
@@ -75,10 +85,8 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <AppProvider>
-          <AppInit />
-          <RootNavigator />
-        </AppProvider>
+        <AppInit />
+        <RootNavigator />
       </QueryClientProvider>
     </SafeAreaProvider>
   );

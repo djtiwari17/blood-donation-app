@@ -23,7 +23,7 @@ export const ReceiverDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const firstName = user?.name?.split(' ')[0] ?? 'User';
 
-  const { data: allRequests = [], isLoading, refetch } = useQuery({
+  const { data: allRequests = [], isLoading, error, refetch } = useQuery({
     queryKey: ['myRequests'],
     queryFn: requestsApi.getMyRequests,
   });
@@ -84,6 +84,14 @@ export const ReceiverDashboardScreen: React.FC<Props> = ({ navigation }) => {
           {isLoading ? (
             <View style={styles.loadingBox}>
               <ActivityIndicator color={colors.secondary} />
+            </View>
+          ) : error ? (
+            <View style={styles.emptyRequests}>
+              <Ionicons name="alert-circle-outline" size={36} color={colors.error} />
+              <Text style={styles.emptyText}>Failed to load your requests</Text>
+              <TouchableOpacity onPress={() => refetch()}>
+                <Text style={styles.retryText}>Tap to retry</Text>
+              </TouchableOpacity>
             </View>
           ) : activeRequests.length === 0 ? (
             <View style={styles.emptyRequests}>
@@ -181,6 +189,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', gap: spacing.sm, ...shadow.sm,
   },
   emptyText: { fontSize: fonts.sizes.sm, color: colors.textHint },
+  retryText: { fontSize: fonts.sizes.sm, color: colors.secondary, fontWeight: '600' },
   reqCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.md,

@@ -24,7 +24,6 @@ export const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
   const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -38,11 +37,7 @@ export const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const handleContinue = () => {
     if (!validate()) return;
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigation.navigate('RoleSelection', { fullName: fullName.trim(), bloodGroup, city, phoneNumber });
-    }, 800);
+    navigation.navigate('RoleSelection', { fullName: fullName.trim(), bloodGroup, city, phoneNumber });
   };
 
   return (
@@ -103,7 +98,7 @@ export const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
             <Text style={styles.phoneText}>+91 {phoneNumber}</Text>
           </View>
 
-          <Button label="Continue" onPress={handleContinue} loading={loading} style={styles.btn} />
+          <Button label="Continue" onPress={handleContinue} style={styles.btn} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

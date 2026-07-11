@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { Avatar } from '../../components/Avatar';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/auth.store';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
+import { donorsApi } from '../../api/donors.api';
 
 type Props = { navigation: NativeStackNavigationProp<DonorHomeStackParamList, 'DonorDashboard'> };
 
@@ -23,14 +24,25 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
 
-  const { data: requests = [] } = useQuery<ApiBloodRequest[]>({
+  const {
+    data: requests = [],
+    isLoading: requestsLoading,
+    error: requestsError,
+    refetch: refetchRequests,
+  } = useQuery<ApiBloodRequest[]>({
     queryKey: ['nearbyRequests'],
     queryFn: () => requestsApi.getNearbyRequests(50),
     retry: 1,
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ['donorProfile'],
+    queryFn: donorsApi.getProfile,
+  });
+
   const firstName = user?.name?.split(' ')[0] ?? 'Donor';
-  const totalDonations = 0; // fetched from donorProfile in Phase 3 donor profile screen
+  const totalDonations = profile?.totalDonations ?? 0;
+  const livesSaved = profile?.livesSaved ?? totalDonations * 3;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -46,7 +58,7 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.badge} />
           </View>
         </TouchableOpacity>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.getParent()?.navigate('Profile')}>
           <Avatar name={user?.name ?? 'U'} size={40} />
         </TouchableOpacity>
       </View>
@@ -70,7 +82,7 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.statsRow}>
           {[
             { label: 'Total Donated', value: totalDonations, icon: 'heart', color: colors.primary },
-            { label: 'Lives Saved', value: totalDonations * 3, icon: 'people', color: colors.success },
+            { label: 'Lives Saved', value: livesSaved, icon: 'people', color: colors.success },
             { label: 'Requests Near', value: requests.length, icon: 'location', color: colors.secondary },
           ].map((s) => (
             <View key={s.label} style={styles.statBox}>
@@ -89,7 +101,25 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.viewAll}>View all</Text>
             </TouchableOpacity>
           </View>
-          {requests.slice(0, 5).map((r) => (
+          {requestsError ? (
+            <View style={styles.sectionState}>
+              <Ionicons name="alert-circle-outline" size={32} color={colors.error} />
+              <Text style={styles.sectionStateText}>Failed to load nearby requests</Text>
+              <TouchableOpacity onPress={() => refetchRequests()}>
+                <Text style={styles.retryText}>Tap to retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : requestsLoading ? (
+            <View style={styles.sectionState}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : requests.length === 0 ? (
+            <View style={styles.sectionState}>
+              <Ionicons name="search-outline" size={32} color={colors.grayLight} />
+              <Text style={styles.sectionStateText}>No requests nearby</Text>
+            </View>
+          ) : (
+          requests.slice(0, 5).map((r) => (
             <TouchableOpacity
               key={r.id}
               style={styles.requestCard}
@@ -108,7 +138,8 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
                 <UrgencyBadge level={(URGENCY_DISPLAY[r.urgency] ?? r.urgency) as any} />
               </View>
             </TouchableOpacity>
-          ))}
+          ))
+          )}
         </View>
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -170,4 +201,7 @@ const styles = StyleSheet.create({
   reqDist: { fontSize: fonts.sizes.xs, color: colors.textHint, marginTop: 2 },
   reqRight: { alignItems: 'flex-end', gap: 4 },
   reqTime: { fontSize: fonts.sizes.xs, color: colors.textHint },
+  sectionState: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
+  sectionStateText: { fontSize: fonts.sizes.sm, color: colors.textHint },
+  retryText: { fontSize: fonts.sizes.sm, color: colors.primary, fontWeight: '600' },
 });

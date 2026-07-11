@@ -16,13 +16,15 @@ export const ReceiverProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { user, logout } = useAuthStore();
   const insets = useSafeAreaInsets();
 
-  const { data: requests = [] } = useQuery({
+  const { data: requests = [], isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['myRequests'],
     queryFn: requestsApi.getMyRequests,
   });
 
   const fulfilled = requests.filter(r => r.status === 'FULFILLED').length;
   const pending   = requests.filter(r => r.status === 'PENDING' || r.status === 'PARTIALLY_FULFILLED').length;
+  // Show a dash instead of a misleading 0 while stats are loading or failed
+  const stat = (n: number) => (statsLoading || statsError ? '—' : n);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -33,8 +35,8 @@ export const ReceiverProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   const menuItems = [
     { icon: 'notifications-outline', label: 'Notifications', onPress: () => navigation.navigate('Notifications') },
-    { icon: 'shield-outline',        label: 'Privacy & Safety', onPress: () => {} },
-    { icon: 'help-circle-outline',   label: 'Help & Support',   onPress: () => {} },
+    { icon: 'shield-outline',        label: 'Privacy & Safety', onPress: () => Alert.alert('Coming Soon', 'Privacy & Safety settings will be available in an upcoming update.') },
+    { icon: 'help-circle-outline',   label: 'Help & Support',   onPress: () => Alert.alert('Coming Soon', 'Help & Support will be available in an upcoming update.') },
   ];
 
   return (
@@ -52,9 +54,9 @@ export const ReceiverProfileScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.statsRow}>
           {[
-            { label: 'Requests',  value: requests.length, icon: 'document-text' },
-            { label: 'Fulfilled', value: fulfilled,        icon: 'checkmark-circle' },
-            { label: 'Active',    value: pending,          icon: 'time' },
+            { label: 'Requests',  value: stat(requests.length), icon: 'document-text' },
+            { label: 'Fulfilled', value: stat(fulfilled),        icon: 'checkmark-circle' },
+            { label: 'Active',    value: stat(pending),          icon: 'time' },
           ].map(s => (
             <View key={s.label} style={styles.stat}>
               <Ionicons name={s.icon as any} size={20} color={colors.secondary} />

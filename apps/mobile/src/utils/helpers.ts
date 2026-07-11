@@ -32,13 +32,3 @@ export const formatDistance = (km: number): string => {
   if (km < 1) return `${(km * 1000).toFixed(0)} m away`;
   return `${km.toFixed(1)} km away`;
 };
-
-export const generateRequestId = (): string => {
-  const num = Math.floor(100000 + Math.random() * 900000);
-  return `REQ${num}`;
-};
-
-export const validatePhone = (phone: string): boolean =>
-  /^[6-9]\d{9}$/.test(phone.replace(/\s/g, '').replace('+91', '').replace('-', ''));
-
-export const validateName = (name: string): boolean => name.trim().length >= 2;

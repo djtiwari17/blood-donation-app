@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert,
+  KeyboardAvoidingView, Platform,
+} from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { DonorHomeStackParamList } from '../../navigation/types';
@@ -22,12 +25,13 @@ export const ReportUserScreen: React.FC = () => {
   const { userId, userName } = route.params;
 
   const [reason, setReason] = useState<ReportReason | ''>('');
+  const [reasonError, setReasonError] = useState('');
   const [details, setDetails] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!reason) {
-      Alert.alert('Select Reason', 'Please select a reason for reporting this user.');
+      setReasonError('Please select a reason for reporting this user.');
       return;
     }
     setLoading(true);
@@ -49,6 +53,7 @@ export const ReportUserScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Header title="Report User" onBack={() => navigation.goBack()} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         <View style={styles.userCard}>
@@ -67,7 +72,7 @@ export const ReportUserScreen: React.FC = () => {
           <TouchableOpacity
             key={r.value}
             style={styles.radioRow}
-            onPress={() => setReason(r.value)}
+            onPress={() => { setReason(r.value); setReasonError(''); }}
             activeOpacity={0.7}
           >
             <View style={[styles.radio, reason === r.value && styles.radioSelected]}>
@@ -76,6 +81,7 @@ export const ReportUserScreen: React.FC = () => {
             <Text style={styles.radioText}>{r.label}</Text>
           </TouchableOpacity>
         ))}
+        {reasonError ? <Text style={styles.errorText}>{reasonError}</Text> : null}
 
         <Text style={[styles.label, { marginTop: spacing.md }]}>Additional details (optional)</Text>
         <TextInput
@@ -100,6 +106,7 @@ export const ReportUserScreen: React.FC = () => {
         <Button label="Submit Report" onPress={handleSubmit} loading={loading} variant="danger" />
         <View style={{ height: 32 }} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -136,4 +143,5 @@ const styles = StyleSheet.create({
     padding: spacing.md, borderRadius: radius.md, marginBottom: spacing.lg, alignItems: 'flex-start',
   },
   noticeText: { flex: 1, fontSize: fonts.sizes.xs, color: colors.secondary, lineHeight: 18 },
+  errorText: { fontSize: fonts.sizes.xs, color: colors.error, marginTop: spacing.xs },
 });

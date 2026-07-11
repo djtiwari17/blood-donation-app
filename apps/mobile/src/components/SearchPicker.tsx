@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, Modal, FlatList, TextInput,
   ActivityIndicator, StyleSheet,
@@ -35,6 +35,12 @@ export function SearchPicker<T extends SearchPickerResult>({
   const [searchError, setSearchError] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
+
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    // invalidate any in-flight search so it can't setState after unmount
+    requestIdRef.current++;
+  }, []);
 
   const runSearch = useCallback((text: string) => {
     setQuery(text);

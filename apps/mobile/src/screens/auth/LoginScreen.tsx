@@ -95,7 +95,9 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>By continuing, you agree to our </Text>
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => Alert.alert('Coming Soon', 'Terms & Privacy Policy will be available in an upcoming update.')}
+          >
             <Text style={styles.link}>Terms & Privacy Policy</Text>
           </TouchableOpacity>
         </View>

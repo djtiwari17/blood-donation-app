@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -8,8 +8,8 @@ import { colors, fonts, spacing } from '../../theme';
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Splash'> };
 
 export const SplashScreen: React.FC<Props> = ({ navigation }) => {
-  const scale = new Animated.Value(0.6);
-  const opacity = new Animated.Value(0);
+  const scale = useRef(new Animated.Value(0.6)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([

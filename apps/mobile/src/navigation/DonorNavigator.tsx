@@ -12,7 +12,6 @@ import { DonationHistoryScreen } from '../screens/donor/DonationHistoryScreen';
 import { DonorProfileScreen } from '../screens/donor/DonorProfileScreen';
 import { NotificationsScreen } from '../screens/common/NotificationsScreen';
 import { ReportUserScreen } from '../screens/common/ReportUserScreen';
-import { VerificationPendingScreen } from '../screens/common/VerificationPendingScreen';
 import {
   DonorHomeStackParamList,
   DonorHistoryStackParamList,
@@ -32,7 +31,6 @@ const HomeNavigator = () => (
     <HomeStack.Screen name="RequestDetails" component={RequestDetailsScreen} />
     <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
     <HomeStack.Screen name="ReportUser" component={ReportUserScreen} />
-    <HomeStack.Screen name="VerificationPendingDonor" component={VerificationPendingScreen} />
   </HomeStack.Navigator>
 );
 
@@ -42,7 +40,6 @@ const RequestsNavigator = () => (
     <RequestsStack.Screen name="RequestDetails" component={RequestDetailsScreen} />
     <RequestsStack.Screen name="ReportUser" component={ReportUserScreen} />
     <RequestsStack.Screen name="Notifications" component={NotificationsScreen} />
-    <RequestsStack.Screen name="VerificationPendingDonor" component={VerificationPendingScreen} />
     <RequestsStack.Screen name="DonorDashboard" component={DonorDashboardScreen} />
   </RequestsStack.Navigator>
 );
@@ -58,7 +55,6 @@ const ProfileNavigator = () => (
     <ProfileStack.Screen name="DonorProfile" component={DonorProfileScreen} />
     <ProfileStack.Screen name="Notifications" component={NotificationsScreen} />
     <ProfileStack.Screen name="ReportUser" component={ReportUserScreen} />
-    <ProfileStack.Screen name="VerificationPendingDonor" component={VerificationPendingScreen} />
   </ProfileStack.Navigator>
 );
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -9,7 +10,7 @@ import * as Location from 'expo-location';
 import { AuthStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius } from '../../theme';
 import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
+import { DateInput } from '../../components/DateInput';
 import { SelectPicker } from '../../components/SelectPicker';
 import { donorsApi } from '../../api/donors.api';
 import { useAuthStore, StoredUser } from '../../store/auth.store';
@@ -57,6 +58,21 @@ export const DonorProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleSave = async () => {
     if (!validate()) return;
+
+    const dateOfBirth = parseDob(dob);
+    if (!dateOfBirth) {
+      setErrors((e) => ({ ...e, dob: 'Invalid date. Use DD/MM/YYYY' }));
+      return;
+    }
+    let lastDonationDate: string | null = null;
+    if (lastDonation.trim()) {
+      lastDonationDate = parseDob(lastDonation);
+      if (!lastDonationDate) {
+        setErrors((e) => ({ ...e, lastDonation: 'Invalid date. Use DD/MM/YYYY' }));
+        return;
+      }
+    }
+
     if (!registrationTokens) {
       Alert.alert('Session Expired', 'Please start registration again.', [
         { text: 'OK', onPress: () => navigation.navigate('Login') },
@@ -72,9 +88,9 @@ export const DonorProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
       const payload: any = {
         isAvailable: available,
         gender: GENDER_MAP[gender],
-        dateOfBirth: parseDob(dob),
+        dateOfBirth,
       };
-      if (lastDonation) payload.lastDonationDate = parseDob(lastDonation);
+      if (lastDonationDate) payload.lastDonationDate = lastDonationDate;
       if (coords) {
         payload.locationLat = coords.lat;
         payload.locationLng = coords.lng;
@@ -100,6 +116,7 @@ export const DonorProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
@@ -109,12 +126,12 @@ export const DonorProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.sub}>Complete your profile to start donating</Text>
 
       <View style={styles.form}>
-        <Input
+        <DateInput
           label="Date of Birth"
           value={dob}
           onChangeText={(t) => { setDob(t); setErrors((e) => ({ ...e, dob: '' })); }}
           placeholder="DD/MM/YYYY  e.g. 12/05/1995"
-          rightIcon="calendar-outline"
+          maximumDate={new Date()}
           error={errors.dob}
         />
 
@@ -127,12 +144,13 @@ export const DonorProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
           error={errors.gender}
         />
 
-        <Input
+        <DateInput
           label="Last Donation Date (optional)"
           value={lastDonation}
-          onChangeText={setLastDonation}
+          onChangeText={(t) => { setLastDonation(t); setErrors((e) => ({ ...e, lastDonation: '' })); }}
           placeholder="DD/MM/YYYY  e.g. 10/01/2024"
-          rightIcon="calendar-outline"
+          maximumDate={new Date()}
+          error={errors.lastDonation}
         />
 
         <View style={styles.availRow}>
@@ -165,20 +183,32 @@ export const DonorProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
         <Button label="Save & Continue" onPress={handleSave} loading={loading} style={styles.btn} />
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
-// Parse "DD/MM/YYYY" or "DD MMM YYYY" into ISO date string
-function parseDob(raw: string): string {
+// Parse "DD/MM/YYYY" or "DD MMM YYYY" into ISO date string; null if not a real date
+function parseDob(raw: string): string | null {
   const trimmed = raw.trim();
   // DD/MM/YYYY
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
-    const [d, m, y] = trimmed.split('/');
-    return `${y}-${m}-${d}`;
+  const dmy = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) {
+    const [, d, m, y] = dmy;
+    const iso = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    const parsed = new Date(`${iso}T00:00:00`);
+    // Reject calendar rollovers like 31/02/2000 → Mar 2
+    if (
+      isNaN(parsed.getTime()) ||
+      parsed.getDate() !== parseInt(d, 10) ||
+      parsed.getMonth() + 1 !== parseInt(m, 10)
+    ) {
+      return null;
+    }
+    return iso;
   }
   // Try native Date parse as fallback
   const parsed = new Date(trimmed);
-  return isNaN(parsed.getTime()) ? trimmed : parsed.toISOString().split('T')[0];
+  return isNaN(parsed.getTime()) ? null : parsed.toISOString().split('T')[0];
 }
 
 const styles = StyleSheet.create({

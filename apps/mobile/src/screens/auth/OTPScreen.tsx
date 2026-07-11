@@ -30,10 +30,11 @@ export const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
   const { setAuth, setOtpSession } = useAuthStore();
 
   useEffect(() => {
-    if (countdown === 0) return;
-    const t = setInterval(() => setCountdown((c) => c - 1), 1000);
+    const t = setInterval(() => {
+      setCountdown((c) => (c > 0 ? c - 1 : c));
+    }, 1000);
     return () => clearInterval(t);
-  }, [countdown]);
+  }, []);
 
   const handleChange = (text: string, idx: number) => {
     const digit = text.replace(/\D/g, '').slice(-1);
@@ -108,7 +109,7 @@ export const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
         err?.response?.status === 429
           ? 'Too many OTP requests. Please wait.'
           : 'Failed to resend OTP.';
-      Alert.alert('Resend Failed', msg);
+      setError(msg);
     }
   };
 

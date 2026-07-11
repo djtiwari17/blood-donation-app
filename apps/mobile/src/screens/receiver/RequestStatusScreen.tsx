@@ -1,12 +1,12 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
-  TouchableOpacity, ActivityIndicator,
+  TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { ReceiverHomeStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius, shadow } from '../../theme';
@@ -41,11 +41,31 @@ export const RequestStatusScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<ReceiverHomeStackParamList>>();
 
+  const qc = useQueryClient();
+
   const { data: requests = [], isLoading, refetch } = useQuery<ApiBloodRequest[]>({
     queryKey: ['myRequests'],
     queryFn: () => requestsApi.getMyRequests(),
     refetchInterval: 30_000,
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => requestsApi.cancelRequest(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['myRequests'] }),
+    onError: (err: any) => Alert.alert(
+      'Error',
+      err?.response?.data?.error?.message ??
+      err?.response?.data?.message ??
+      'Failed to cancel request',
+    ),
+  });
+
+  const handleCancel = (id: string) => {
+    Alert.alert('Cancel Request', 'Are you sure you want to cancel this blood request?', [
+      { text: 'No', style: 'cancel' },
+      { text: 'Yes, Cancel', style: 'destructive', onPress: () => cancelMutation.mutate(id) },
+    ]);
+  };
 
   const active = requests.find(r => r.status === 'PENDING' || r.status === 'PARTIALLY_FULFILLED');
 
@@ -108,6 +128,16 @@ export const RequestStatusScreen: React.FC = () => {
               >
                 <Ionicons name="people-outline" size={18} color={colors.white} />
                 <Text style={styles.viewMatchesText}>View Matching Donors</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => handleCancel(active.id)}
+                disabled={cancelMutation.isPending}
+              >
+                <Text style={styles.cancelText}>
+                  {cancelMutation.isPending ? 'Cancelling…' : 'Cancel Request'}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -190,6 +220,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm,
   },
   viewMatchesText: { fontSize: fonts.sizes.base, color: colors.white, fontWeight: '700' },
+  cancelBtn: { alignItems: 'center', padding: spacing.md, marginTop: spacing.xs },
+  cancelText: { fontSize: fonts.sizes.sm, color: colors.error, fontWeight: '600' },
   noActiveCard: {
     backgroundColor: colors.white, margin: spacing.base, borderRadius: radius.xl,
     padding: spacing.xl, alignItems: 'center', gap: spacing.sm, ...shadow.sm,

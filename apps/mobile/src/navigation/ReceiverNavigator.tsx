@@ -13,9 +13,15 @@ import { RequestStatusScreen } from '../screens/receiver/RequestStatusScreen';
 import { ReceiverProfileScreen } from '../screens/receiver/ReceiverProfileScreen';
 import { NotificationsScreen } from '../screens/common/NotificationsScreen';
 import { ReportUserScreen } from '../screens/common/ReportUserScreen';
-import { ReceiverHomeStackParamList, ReceiverProfileStackParamList } from './types';
+import {
+  ReceiverHomeStackParamList,
+  ReceiverNotificationsStackParamList,
+  ReceiverProfileStackParamList,
+} from './types';
 
 const HomeStack = createNativeStackNavigator<ReceiverHomeStackParamList>();
+const RequestsStack = createNativeStackNavigator<ReceiverHomeStackParamList>();
+const NotificationsStack = createNativeStackNavigator<ReceiverNotificationsStackParamList>();
 const ProfileStack = createNativeStackNavigator<ReceiverProfileStackParamList>();
 const Tab = createBottomTabNavigator();
 
@@ -29,6 +35,20 @@ const HomeNavigator = () => (
     <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
     <HomeStack.Screen name="ReportUser" component={ReportUserScreen} />
   </HomeStack.Navigator>
+);
+
+const RequestsNavigator = () => (
+  <RequestsStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <RequestsStack.Screen name="RequestStatus" component={RequestStatusScreen} />
+    <RequestsStack.Screen name="MatchingDonors" component={MatchingDonorsScreen} />
+    <RequestsStack.Screen name="ReportUser" component={ReportUserScreen} />
+  </RequestsStack.Navigator>
+);
+
+const NotificationsNavigator = () => (
+  <NotificationsStack.Navigator screenOptions={{ headerShown: false }}>
+    <NotificationsStack.Screen name="Notifications" component={NotificationsScreen} />
+  </NotificationsStack.Navigator>
 );
 
 const ProfileNavigator = () => (
@@ -66,8 +86,8 @@ export const ReceiverNavigator = () => (
     })}
   >
     <Tab.Screen name="Home" component={HomeNavigator} />
-    <Tab.Screen name="MyRequests" component={RequestStatusScreen} options={{ title: 'My Requests', unmountOnBlur: false }} />
-    <Tab.Screen name="Notifications" component={NotificationsScreen} />
+    <Tab.Screen name="MyRequests" component={RequestsNavigator} options={{ title: 'My Requests' }} />
+    <Tab.Screen name="Notifications" component={NotificationsNavigator} />
     <Tab.Screen name="Profile" component={ProfileNavigator} />
   </Tab.Navigator>
 );

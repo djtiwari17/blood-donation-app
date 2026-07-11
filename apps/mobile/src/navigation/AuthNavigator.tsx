@@ -7,7 +7,6 @@ import { OTPScreen } from '../screens/auth/OTPScreen';
 import { RegistrationScreen } from '../screens/auth/RegistrationScreen';
 import { RoleSelectionScreen } from '../screens/auth/RoleSelectionScreen';
 import { DonorProfileSetupScreen } from '../screens/auth/DonorProfileSetupScreen';
-import { VerificationPendingScreen } from '../screens/common/VerificationPendingScreen';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
@@ -19,6 +18,5 @@ export const AuthNavigator = () => (
     <Stack.Screen name="Registration" component={RegistrationScreen} />
     <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
     <Stack.Screen name="DonorProfileSetup" component={DonorProfileSetupScreen} />
-    <Stack.Screen name="VerificationPending" component={VerificationPendingScreen} />
   </Stack.Navigator>
 );
