@@ -13,6 +13,7 @@ import { Header } from '../../components/Header';
 import { Avatar } from '../../components/Avatar';
 import { BloodGroupBadge } from '../../components/Badge';
 import { requestsApi, ApiMatch } from '../../api/requests.api';
+import { formatMatchStatus } from '../../utils/format';
 
 type Props = {
   navigation: NativeStackNavigationProp<ReceiverHomeStackParamList, 'MatchingDonors'>;
@@ -59,7 +60,7 @@ export const MatchingDonorsScreen: React.FC<Props> = ({ navigation, route }) => 
             </View>
           )}
           <Text style={[styles.status, { color: STATUS_COLORS[item.status] ?? colors.gray }]}>
-            {item.status}
+            {formatMatchStatus(item.status)}
           </Text>
         </View>
         <View style={styles.right}>

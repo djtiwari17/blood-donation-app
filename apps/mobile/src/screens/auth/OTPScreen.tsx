@@ -9,6 +9,7 @@ import { AuthStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius, shadow } from '../../theme';
 import { Button } from '../../components/Button';
 import { authApi, ExistingUserResult, NewUserResult } from '../../api/auth.api';
+import { formatPhone } from '../../utils/format';
 import { useAuthStore, StoredUser } from '../../store/auth.store';
 
 type Props = {
@@ -125,7 +126,7 @@ export const OTPScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
         <Text style={styles.title}>Verify OTP</Text>
         <Text style={styles.sub}>Enter the 6-digit code sent to</Text>
-        <Text style={styles.phone}>{phoneNumber}</Text>
+        <Text style={styles.phone}>{formatPhone(phoneNumber)}</Text>
 
         <View style={styles.otpRow}>
           {otp.map((d, i) => (

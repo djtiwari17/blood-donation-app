@@ -12,13 +12,10 @@ import { colors, fonts, spacing, radius, shadow } from '../../theme';
 import { Header } from '../../components/Header';
 import { BloodGroupBadge, UrgencyBadge } from '../../components/Badge';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
+import { formatBloodGroup } from '../../utils/format';
 
 const FILTERS = ['All', 'A+', 'B+', 'O+', 'AB+'] as const;
 type Filter = typeof FILTERS[number];
-
-const URGENCY_DISPLAY: Record<string, string> = {
-  CRITICAL: 'Urgent', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low',
-};
 
 export const NearbyRequestsScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<DonorHomeStackParamList>>();
@@ -32,10 +29,10 @@ export const NearbyRequestsScreen: React.FC = () => {
   });
 
   const filtered = requests
-    .filter(r => filter === 'All' || r.bloodGroup === filter)
+    .filter(r => filter === 'All' || formatBloodGroup(r.bloodGroup) === filter)
     .filter(r =>
       !search ||
-      r.bloodGroup.toLowerCase().includes(search.toLowerCase()) ||
+      formatBloodGroup(r.bloodGroup).toLowerCase().includes(search.toLowerCase()) ||
       r.hospitalName.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -57,7 +54,7 @@ export const NearbyRequestsScreen: React.FC = () => {
         </Text>
       </View>
       <View style={styles.right}>
-        <UrgencyBadge level={URGENCY_DISPLAY[item.urgency] as any} />
+        <UrgencyBadge level={item.urgency} />
         <Ionicons name="chevron-forward" size={16} color={colors.grayLight} style={{ marginTop: 4 }} />
       </View>
     </TouchableOpacity>

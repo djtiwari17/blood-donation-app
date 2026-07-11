@@ -13,13 +13,9 @@ import { Avatar } from '../../components/Avatar';
 import { BloodGroupBadge } from '../../components/Badge';
 import { useAuthStore } from '../../store/auth.store';
 import { donorsApi } from '../../api/donors.api';
+import { formatBloodGroup, formatPhone } from '../../utils/format';
 
 type Props = { navigation: NativeStackNavigationProp<DonorProfileStackParamList, 'DonorProfile'> };
-
-const BG_MAP: Record<string, string> = {
-  A_POS: 'A+', A_NEG: 'A-', B_POS: 'B+', B_NEG: 'B-',
-  AB_POS: 'AB+', AB_NEG: 'AB-', O_POS: 'O+', O_NEG: 'O-',
-};
 
 export const DonorProfileScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -44,7 +40,7 @@ export const DonorProfileScreen: React.FC<Props> = ({ navigation }) => {
     ]);
   };
 
-  const bloodGroup = user?.bloodGroup ? (BG_MAP[user.bloodGroup] ?? user.bloodGroup) : 'A+';
+  const bloodGroup = formatBloodGroup(user?.bloodGroup) || 'A+';
   const isVerified = user?.verifStatus === 'VERIFIED';
 
   const menuItems = [
@@ -67,7 +63,7 @@ export const DonorProfileScreen: React.FC<Props> = ({ navigation }) => {
             )}
           </View>
           <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.phone}>{user?.phone}</Text>
+          <Text style={styles.phone}>{formatPhone(user?.phone)}</Text>
           <BloodGroupBadge group={bloodGroup as any} size="md" />
         </View>
 

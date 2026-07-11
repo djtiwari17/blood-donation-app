@@ -14,14 +14,11 @@ import { BloodGroupBadge, UrgencyBadge } from '../../components/Badge';
 import { Button } from '../../components/Button';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
 import { matchingApi } from '../../api/matching.api';
+import { formatBloodGroup, formatUrgency } from '../../utils/format';
 
 type Props = {
   navigation: NativeStackNavigationProp<DonorHomeStackParamList, 'RequestDetails'>;
   route: RouteProp<DonorHomeStackParamList, 'RequestDetails'>;
-};
-
-const URGENCY_DISPLAY: Record<string, string> = {
-  CRITICAL: 'Urgent', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low',
 };
 
 export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
@@ -43,7 +40,7 @@ export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
     Alert.alert(
       action === 'ACCEPT' ? 'Confirm Donation' : 'Decline Request',
       action === 'ACCEPT'
-        ? `Confirm that you will donate ${request.bloodGroup} blood at ${request.hospitalName}?`
+        ? `Confirm that you will donate ${formatBloodGroup(request.bloodGroup)} blood at ${request.hospitalName}?`
         : 'Are you sure you want to decline this request?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -118,7 +115,7 @@ export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
   const matchAccepted = myMatch?.status === 'ACCEPTED';
   const matchDonated = myMatch?.status === 'DONATED';
   const matchDeclined = myMatch?.status === 'CANCELLED' || myMatch?.status === 'TIMED_OUT';
-  const urgencyLabel = URGENCY_DISPLAY[request.urgency] ?? request.urgency;
+  const urgencyLabel = formatUrgency(request.urgency);
 
   const row = (icon: string, label: string, value: string, color?: string) => (
     <View style={styles.detailRow} key={label}>

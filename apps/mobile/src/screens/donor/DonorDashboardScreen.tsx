@@ -13,12 +13,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/auth.store';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
 import { donorsApi } from '../../api/donors.api';
+import { formatBloodGroup } from '../../utils/format';
 
 type Props = { navigation: NativeStackNavigationProp<DonorHomeStackParamList, 'DonorDashboard'> };
-
-const URGENCY_DISPLAY: Record<string, string> = {
-  CRITICAL: 'Urgent', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low',
-};
 
 export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuthStore();
@@ -73,7 +70,7 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
           </View>
           <View style={styles.heroRight}>
             <View style={styles.dropIcon}>
-              <Text style={styles.dropNum}>{user?.bloodGroup ?? '?'}</Text>
+              <Text style={styles.dropNum}>{formatBloodGroup(user?.bloodGroup) || '?'}</Text>
             </View>
           </View>
         </View>
@@ -135,7 +132,7 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               </View>
               <View style={styles.reqRight}>
-                <UrgencyBadge level={(URGENCY_DISPLAY[r.urgency] ?? r.urgency) as any} />
+                <UrgencyBadge level={r.urgency} />
               </View>
             </TouchableOpacity>
           ))

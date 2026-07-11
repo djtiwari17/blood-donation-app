@@ -12,6 +12,7 @@ import { ReceiverHomeStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius, shadow } from '../../theme';
 import { BloodGroupBadge } from '../../components/Badge';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
+import { formatBloodGroup, formatRequestStatus } from '../../utils/format';
 
 const STATUS_STEPS = [
   { key: 'PENDING',              label: 'Request Submitted' },
@@ -91,11 +92,11 @@ export const RequestStatusScreen: React.FC = () => {
               <View style={styles.activeHeader}>
                 <BloodGroupBadge group={active.bloodGroup as any} size="sm" />
                 <View style={styles.activeInfo}>
-                  <Text style={styles.activeTitle}>{active.bloodGroup} Blood • {active.unitsNeeded} Units</Text>
+                  <Text style={styles.activeTitle}>{formatBloodGroup(active.bloodGroup)} Blood • {active.unitsNeeded} Units</Text>
                   <Text style={styles.activeSub}>{active.hospitalName}</Text>
                 </View>
                 <View style={[styles.statusDot, { backgroundColor: STATUS_BADGE_COLORS[active.status] ?? colors.gray }]}>
-                  <Text style={styles.statusDotText}>{active.status.replace('_', ' ')}</Text>
+                  <Text style={styles.statusDotText}>{formatRequestStatus(active.status)}</Text>
                 </View>
               </View>
 
@@ -167,7 +168,7 @@ export const RequestStatusScreen: React.FC = () => {
                   </View>
                   <View style={styles.reqRight}>
                     <View style={[styles.statusPill, { backgroundColor: STATUS_BADGE_COLORS[r.status] ?? colors.gray }]}>
-                      <Text style={styles.statusPillText}>{r.status.replace('_', ' ')}</Text>
+                      <Text style={styles.statusPillText}>{formatRequestStatus(r.status)}</Text>
                     </View>
                     <Text style={styles.reqTime}>{formatShortDate(r.createdAt)}</Text>
                   </View>
