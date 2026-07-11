@@ -6,7 +6,6 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import { AuthStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius } from '../../theme';
 import { Button } from '../../components/Button';
@@ -14,6 +13,7 @@ import { DateInput } from '../../components/DateInput';
 import { SelectPicker } from '../../components/SelectPicker';
 import { donorsApi } from '../../api/donors.api';
 import { useAuthStore, StoredUser } from '../../store/auth.store';
+import { getDeviceCoords } from '../../utils/location';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'DonorProfileSetup'>;
@@ -24,19 +24,6 @@ const GENDERS = ['Male', 'Female', 'Other'];
 const GENDER_MAP: Record<string, 'MALE' | 'FEMALE' | 'OTHER'> = {
   Male: 'MALE', Female: 'FEMALE', Other: 'OTHER',
 };
-
-async function requestLocation(): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return null;
-    const loc = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
-    return { lat: loc.coords.latitude, lng: loc.coords.longitude };
-  } catch {
-    return null;
-  }
-}
 
 export const DonorProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
   const [dob, setDob] = useState('');
@@ -82,8 +69,8 @@ export const DonorProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // Get GPS location (optional — gracefully skipped if denied)
-      const coords = await requestLocation();
+      // Get GPS location (optional — gracefully skipped if denied or no fix)
+      const coords = await getDeviceCoords();
 
       const payload: any = {
         isAvailable: available,

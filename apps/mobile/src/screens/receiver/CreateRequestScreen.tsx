@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import { ReceiverHomeStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius } from '../../theme';
 import { Header } from '../../components/Header';
@@ -17,17 +16,7 @@ import { SearchPicker } from '../../components/SearchPicker';
 import { BLOOD_GROUPS } from '../../utils/helpers';
 import { requestsApi, CreateRequestPayload } from '../../api/requests.api';
 import { geocodingApi } from '../../api/geocoding.api';
-
-async function getDeviceLocation(): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return null;
-    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    return { lat: loc.coords.latitude, lng: loc.coords.longitude };
-  } catch {
-    return null;
-  }
-}
+import { getDeviceCoords } from '../../utils/location';
 
 type Props = { navigation: NativeStackNavigationProp<ReceiverHomeStackParamList, 'CreateRequest'> };
 
@@ -53,7 +42,7 @@ export const CreateRequestScreen: React.FC<Props> = ({ navigation }) => {
   const [deviceLocation, setDeviceLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    getDeviceLocation().then(setDeviceLocation);
+    getDeviceCoords().then(setDeviceLocation);
   }, []);
 
   const validate = () => {
