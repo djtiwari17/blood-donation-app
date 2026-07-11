@@ -95,7 +95,7 @@ export const RegistrationScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <View style={styles.phoneRow}>
             <Ionicons name="call-outline" size={18} color={colors.gray} />
-            <Text style={styles.phoneText}>+91 {phoneNumber}</Text>
+            <Text style={styles.phoneText}>{phoneNumber.replace(/^\+91(?=\d)/, '+91 ')}</Text>
           </View>
 
           <Button label="Continue" onPress={handleContinue} style={styles.btn} />
