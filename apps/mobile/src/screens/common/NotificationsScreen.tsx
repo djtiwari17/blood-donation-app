@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, RefreshControl,
@@ -14,13 +14,28 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const notifIcon = (type: string): { icon: IconName; color: string; bg: string } => {
   switch (type) {
-    case 'MATCH_FOUND':      return { icon: 'person-add',       color: colors.primary,   bg: colors.primaryPale };
-    case 'MATCH_ACCEPTED':   return { icon: 'checkmark-circle', color: colors.success,   bg: colors.successLight };
-    case 'MATCH_DECLINED':   return { icon: 'close-circle',     color: colors.error,     bg: '#FFEBEE' };
-    case 'REQUEST_FULFILLED':return { icon: 'heart',            color: colors.success,   bg: colors.successLight };
-    case 'REQUEST_EXPIRED':  return { icon: 'alarm',            color: colors.warning,   bg: colors.warningLight };
-    default:                 return { icon: 'notifications',    color: colors.secondary, bg: '#E3F2FD' };
+    case 'MATCH_FOUND':          return { icon: 'person-add',       color: colors.primary,   bg: colors.primaryPale };
+    case 'MATCH_ACCEPTED':       return { icon: 'checkmark-circle', color: colors.success,   bg: colors.successLight };
+    case 'MATCH_DECLINED':       return { icon: 'close-circle',     color: colors.error,     bg: '#FFEBEE' };
+    case 'REQUEST_FULFILLED':    return { icon: 'heart',            color: colors.success,   bg: colors.successLight };
+    case 'REQUEST_EXPIRED':      return { icon: 'alarm',            color: colors.warning,   bg: colors.warningLight };
+    case 'CAMP_REMINDER':        return { icon: 'calendar',         color: colors.primary,   bg: colors.primaryPale };
+    case 'DONATION_ANNIVERSARY': return { icon: 'gift',             color: colors.primary,   bg: colors.primaryPale };
+    default:                     return { icon: 'notifications',    color: colors.secondary, bg: '#E3F2FD' };
   }
+};
+
+const TABS = ['All', 'Requests', 'Reminders', 'Updates'] as const;
+type Tab = typeof TABS[number];
+
+const REQUEST_TYPES = new Set(['MATCH_FOUND', 'MATCH_ACCEPTED', 'MATCH_DECLINED', 'REQUEST_FULFILLED', 'REQUEST_EXPIRED']);
+const REMINDER_TYPES = new Set(['CAMP_REMINDER', 'DONATION_ANNIVERSARY']);
+
+const inTab = (type: string, tab: Tab): boolean => {
+  if (tab === 'All') return true;
+  if (tab === 'Requests') return REQUEST_TYPES.has(type);
+  if (tab === 'Reminders') return REMINDER_TYPES.has(type);
+  return !REQUEST_TYPES.has(type) && !REMINDER_TYPES.has(type); // Updates = everything else
 };
 
 const timeAgo = (dateStr: string): string => {
@@ -36,6 +51,7 @@ const timeAgo = (dateStr: string): string => {
 export const NotificationsScreen: React.FC = () => {
   const navigation = useNavigation();
   const qc = useQueryClient();
+  const [tab, setTab] = useState<Tab>('All');
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['notifications'],
@@ -53,7 +69,7 @@ export const NotificationsScreen: React.FC = () => {
   });
 
   const unread = data?.unreadCount ?? 0;
-  const notifications = data?.notifications ?? [];
+  const notifications = (data?.notifications ?? []).filter(n => inTab(n.type, tab));
 
   const renderItem = ({ item }: { item: ApiNotification }) => {
     const { icon, color, bg } = notifIcon(item.type);
@@ -92,6 +108,18 @@ export const NotificationsScreen: React.FC = () => {
         }
       />
 
+      <View style={styles.tabs}>
+        {TABS.map(t => (
+          <TouchableOpacity
+            key={t}
+            style={[styles.tab, tab === t && styles.tabActive]}
+            onPress={() => setTab(t)}
+          >
+            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{t}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {isLoading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
@@ -129,6 +157,18 @@ export const NotificationsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.screenBg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tabs: {
+    flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm, backgroundColor: colors.white,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  tab: {
+    flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: radius.full,
+    borderWidth: 1.5, borderColor: colors.border,
+  },
+  tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  tabText: { fontSize: fonts.sizes.xs, fontWeight: '600', color: colors.textSecondary },
+  tabTextActive: { color: colors.white },
   badge: {
     backgroundColor: colors.primary, borderRadius: radius.full ?? 999,
     minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,11 +9,15 @@ import { DonorHomeStackParamList } from '../../navigation/types';
 import { colors, fonts, spacing, radius, shadow } from '../../theme';
 import { BloodGroupBadge, UrgencyBadge } from '../../components/Badge';
 import { Avatar } from '../../components/Avatar';
+import { CampsPreview } from '../../components/CampsPreview';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/auth.store';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
 import { donorsApi } from '../../api/donors.api';
 import { formatBloodGroup } from '../../utils/format';
+
+// Urgency tiers treated as "emergency" for the highlighted home section.
+const EMERGENCY_URGENCY = new Set(['CRITICAL', 'HIGH']);
 
 type Props = { navigation: NativeStackNavigationProp<DonorHomeStackParamList, 'DonorDashboard'> };
 
@@ -40,6 +44,21 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const firstName = user?.name?.split(' ')[0] ?? 'Donor';
   const totalDonations = profile?.totalDonations ?? 0;
   const livesSaved = profile?.livesSaved ?? totalDonations * 3;
+
+  const emergencies = requests.filter((r) => EMERGENCY_URGENCY.has(r.urgency));
+
+  // "Request Blood" is a receiver action. DONOR_RECEIVER users can post one via
+  // the nested request flow; pure donors can't (backend blocks it), so explain.
+  const handleRequestBlood = () => {
+    if (user?.role === 'DONOR_RECEIVER') {
+      navigation.navigate('RequestFlow', { screen: 'CreateRequest' });
+    } else {
+      Alert.alert(
+        'Requesting blood',
+        "You're registered as a donor. Posting a blood request needs receiver access on your account.",
+      );
+    }
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -90,6 +109,75 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
           ))}
         </View>
 
+        {/* Quick Actions */}
+        <View style={styles.quickRow}>
+          <TouchableOpacity
+            style={[styles.quickBtn, styles.quickPrimary]}
+            onPress={() => navigation.navigate('NearbyRequests')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="water" size={20} color={colors.white} />
+            <Text style={styles.quickPrimaryText}>Donate Blood</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.quickBtn, styles.quickOutline]}
+            onPress={handleRequestBlood}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+            <Text style={styles.quickOutlineText}>Request Blood</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Emergency Requests */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Emergency Requests</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('NearbyRequests')}>
+              <Text style={styles.viewAll}>View all</Text>
+            </TouchableOpacity>
+          </View>
+          {requestsError ? (
+            <View style={styles.sectionState}>
+              <Ionicons name="alert-circle-outline" size={32} color={colors.error} />
+              <Text style={styles.sectionStateText}>Failed to load requests</Text>
+              <TouchableOpacity onPress={() => refetchRequests()}>
+                <Text style={styles.retryText}>Tap to retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : requestsLoading ? (
+            <View style={styles.sectionState}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : emergencies.length === 0 ? (
+            <View style={styles.sectionState}>
+              <Ionicons name="checkmark-circle-outline" size={32} color={colors.grayLight} />
+              <Text style={styles.sectionStateText}>No emergency requests nearby</Text>
+            </View>
+          ) : (
+            emergencies.slice(0, 2).map((r) => (
+              <TouchableOpacity
+                key={r.id}
+                style={[styles.requestCard, styles.emergencyCard]}
+                onPress={() => navigation.navigate('RequestDetails', { requestId: r.id })}
+                activeOpacity={0.8}
+              >
+                <BloodGroupBadge group={r.bloodGroup as any} size="md" />
+                <View style={styles.reqInfo}>
+                  <Text style={styles.reqUnits}>{r.patientName}</Text>
+                  <Text style={styles.reqHospital}>{r.hospitalName}</Text>
+                  <Text style={styles.reqDist}>
+                    {r.distanceKm != null ? `${r.distanceKm.toFixed(1)} km away` : ''}
+                  </Text>
+                </View>
+                <View style={styles.reqRight}>
+                  <UrgencyBadge level={r.urgency} />
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
         {/* Nearby Requests */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -138,6 +226,10 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
           ))
           )}
         </View>
+
+        {/* Blood Camps & Events */}
+        <CampsPreview onViewAll={() => navigation.getParent()?.navigate('Camps')} />
+
         <View style={{ height: 24 }} />
       </ScrollView>
     </View>
@@ -181,6 +273,18 @@ const styles = StyleSheet.create({
   },
   statVal: { fontSize: fonts.sizes.xl, fontWeight: '800' },
   statLabel: { fontSize: fonts.sizes.xs, color: colors.textSecondary, textAlign: 'center' },
+  quickRow: {
+    flexDirection: 'row', marginHorizontal: spacing.base, gap: spacing.sm, marginTop: spacing.sm,
+  },
+  quickBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: spacing.xs, paddingVertical: spacing.md, borderRadius: radius.lg, ...shadow.sm,
+  },
+  quickPrimary: { backgroundColor: colors.primary },
+  quickPrimaryText: { color: colors.white, fontWeight: '700', fontSize: fonts.sizes.md },
+  quickOutline: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.primary },
+  quickOutlineText: { color: colors.primary, fontWeight: '700', fontSize: fonts.sizes.md },
+  emergencyCard: { backgroundColor: colors.urgentBg, borderWidth: 1, borderColor: colors.primaryPale },
   section: { margin: spacing.base, marginTop: spacing.sm },
   sectionHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm,

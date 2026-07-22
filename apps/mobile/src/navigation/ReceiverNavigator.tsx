@@ -13,6 +13,7 @@ import { RequestStatusScreen } from '../screens/receiver/RequestStatusScreen';
 import { ReceiverProfileScreen } from '../screens/receiver/ReceiverProfileScreen';
 import { NotificationsScreen } from '../screens/common/NotificationsScreen';
 import { ReportUserScreen } from '../screens/common/ReportUserScreen';
+import { CampsScreen } from '../screens/common/CampsScreen';
 import {
   ReceiverHomeStackParamList,
   ReceiverNotificationsStackParamList,
@@ -65,6 +66,7 @@ const tabIcon = (route: string, focused: boolean): IconName => {
   const icons: Record<string, [IconName, IconName]> = {
     Home:          ['home', 'home-outline'],
     MyRequests:    ['document-text', 'document-text-outline'],
+    Camps:         ['calendar', 'calendar-outline'],
     Notifications: ['notifications', 'notifications-outline'],
     Profile:       ['person', 'person-outline'],
   };
@@ -87,6 +89,7 @@ export const ReceiverNavigator = () => (
   >
     <Tab.Screen name="Home" component={HomeNavigator} />
     <Tab.Screen name="MyRequests" component={RequestsNavigator} options={{ title: 'My Requests' }} />
+    <Tab.Screen name="Camps" component={CampsScreen} />
     <Tab.Screen name="Notifications" component={NotificationsNavigator} />
     <Tab.Screen name="Profile" component={ProfileNavigator} />
   </Tab.Navigator>

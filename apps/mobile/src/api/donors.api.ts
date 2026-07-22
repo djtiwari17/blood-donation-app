@@ -57,6 +57,11 @@ export const donorsApi = {
     return res.data.data;
   },
 
+  // Lightweight periodic location refresh (no reverse-geocode) for alert targeting.
+  updateLocation: async (lat: number, lng: number): Promise<void> => {
+    await apiClient.patch('/donors/location', { lat, lng });
+  },
+
   getDonationHistory: async (page = 1): Promise<{
     matches: DonationHistoryMatch[];
     total: number;

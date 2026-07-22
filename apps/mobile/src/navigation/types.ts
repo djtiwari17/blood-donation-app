@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type AuthStackParamList = {
   Splash: undefined;
   Login: undefined;
@@ -10,9 +12,13 @@ export type AuthStackParamList = {
 export type DonorHomeStackParamList = {
   DonorDashboard: undefined;
   NearbyRequests: undefined;
+  MapView: undefined;
   RequestDetails: { requestId: string };
   Notifications: undefined;
   ReportUser: { userId: string; userName: string };
+  // Blood-request flow, reachable from the donor home "Request Blood" CTA for
+  // DONOR_RECEIVER users. Reuses the receiver request screens/param list.
+  RequestFlow: NavigatorScreenParams<ReceiverHomeStackParamList>;
 };
 
 export type DonorHistoryStackParamList = {

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { colors, fonts, spacing, radius, shadow } from '../../theme';
 import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/Button';
 import { BloodGroupBadge, UrgencyBadge } from '../../components/Badge';
+import { CampsPreview } from '../../components/CampsPreview';
 import { useAuthStore } from '../../store/auth.store';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
 
@@ -29,6 +30,14 @@ export const ReceiverDashboardScreen: React.FC<Props> = ({ navigation }) => {
   });
 
   const activeRequests = allRequests.filter(r => ACTIVE_STATUSES.has(r.status));
+
+  // Pure receivers have no donor profile; explain rather than dead-end.
+  const handleDonate = () => {
+    Alert.alert(
+      'Become a donor',
+      'To donate blood and receive nearby requests, your account needs donor access. Contact support to enable it.',
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -79,6 +88,26 @@ export const ReceiverDashboardScreen: React.FC<Props> = ({ navigation }) => {
           ))}
         </View>
 
+        {/* Quick Actions */}
+        <View style={styles.quickRow}>
+          <TouchableOpacity
+            style={[styles.quickBtn, styles.quickPrimary]}
+            onPress={() => navigation.navigate('CreateRequest')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add-circle-outline" size={20} color={colors.white} />
+            <Text style={styles.quickPrimaryText}>Request Blood</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.quickBtn, styles.quickOutline]}
+            onPress={handleDonate}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="water-outline" size={20} color={colors.primary} />
+            <Text style={styles.quickOutlineText}>Donate Blood</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>My Active Requests</Text>
           {isLoading ? (
@@ -120,6 +149,9 @@ export const ReceiverDashboardScreen: React.FC<Props> = ({ navigation }) => {
             ))
           )}
         </View>
+
+        {/* Blood Camps & Events */}
+        <CampsPreview onViewAll={() => navigation.getParent()?.navigate('Camps')} />
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>How It Works</Text>
@@ -178,6 +210,17 @@ const styles = StyleSheet.create({
   },
   infoVal: { fontSize: fonts.sizes.xl, fontWeight: '800' },
   infoLabel: { fontSize: fonts.sizes.xs, color: colors.textSecondary, textAlign: 'center' },
+  quickRow: {
+    flexDirection: 'row', marginHorizontal: spacing.base, gap: spacing.sm, marginBottom: spacing.sm,
+  },
+  quickBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: spacing.xs, paddingVertical: spacing.md, borderRadius: radius.lg, ...shadow.sm,
+  },
+  quickPrimary: { backgroundColor: colors.primary },
+  quickPrimaryText: { color: colors.white, fontWeight: '700', fontSize: fonts.sizes.md },
+  quickOutline: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.primary },
+  quickOutlineText: { color: colors.primary, fontWeight: '700', fontSize: fonts.sizes.md },
   section: { margin: spacing.base, marginTop: spacing.xs },
   sectionTitle: { fontSize: fonts.sizes.lg, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.sm },
   loadingBox: {

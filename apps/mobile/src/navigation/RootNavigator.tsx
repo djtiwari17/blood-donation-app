@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { navigationRef } from './navigationRef';
 import { useAuthStore } from '../store/auth.store';
 import { usersApi } from '../api/users.api';
 import { AuthNavigator } from './AuthNavigator';
@@ -41,7 +42,7 @@ export const RootNavigator = () => {
   const role = user?.role ?? '';
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       {!isAuthenticated ? (
         <AuthNavigator />
       ) : role === 'DONOR' || role === 'DONOR_RECEIVER' ? (
