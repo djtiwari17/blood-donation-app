@@ -2,6 +2,7 @@ import { Body, Controller, DefaultValuePipe, Get, ParseIntPipe, Patch, Post, Que
 import { DonorsService } from './donors.service';
 import { CreateDonorProfileDto } from './dto/create-donor-profile.dto';
 import { UpdateDonorProfileDto } from './dto/update-donor-profile.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '@prisma/client';
@@ -24,6 +25,11 @@ export class DonorsController {
   @Patch('availability')
   toggleAvailability(@CurrentUser() user: User, @Body() dto: UpdateDonorProfileDto) {
     return this.donorsService.updateProfile(user.id, dto);
+  }
+
+  @Patch('location')
+  updateLocation(@CurrentUser() user: User, @Body() dto: UpdateLocationDto) {
+    return this.donorsService.updateLocation(user.id, dto.lat, dto.lng);
   }
 
   @Patch('profile')

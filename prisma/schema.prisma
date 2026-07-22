@@ -69,6 +69,12 @@ enum RequestStatus {
   CANCELLED
 }
 
+enum ModerationStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 enum MatchStatus {
   NOTIFIED
   ACCEPTED
@@ -111,17 +117,22 @@ model User {
   isBlocked    Boolean     @default(false)
   verifStatus  VerifStatus @default(UNVERIFIED)
   reportCount  Int         @default(0)
+  // Fake-request strikes (distinct from reportCount, which is user reports).
+  strikeCount  Int         @default(0)
+  isFlagged    Boolean     @default(false)
   createdAt    DateTime    @default(now()) @db.Timestamptz
   deletedAt    DateTime?   @db.Timestamptz
 
-  donorProfile     DonorProfile?
-  bloodRequests    BloodRequest[]
-  notifications    Notification[]
-  reportsMade      Report[]         @relation("reporter")
-  reportsReceived  Report[]         @relation("reported")
-  auditLogs        AuditLog[]
-  otpVerifs        OtpVerif[]
-  refreshTokens    RefreshToken[]
+  donorProfile      DonorProfile?
+  bloodRequests     BloodRequest[]
+  notifications     Notification[]
+  reportsMade       Report[]           @relation("reporter")
+  reportsReceived   Report[]           @relation("reported")
+  auditLogs         AuditLog[]
+  otpVerifs         OtpVerif[]
+  refreshTokens     RefreshToken[]
+  campRegistrations CampRegistration[]
+  pushTokens        PushToken[]
 
   @@index([bloodGroup])
   @@index([verifStatus])
@@ -167,6 +178,13 @@ model BloodRequest {
   requiredBy     DateTime      @db.Timestamptz
   expiresAt      DateTime      @db.Timestamptz
   status         RequestStatus @default(PENDING)
+  // Admin moderation — gates whether a request reaches the donor feed.
+  moderationStatus ModerationStatus @default(APPROVED)
+  isVerified       Boolean          @default(false)
+  isFake           Boolean          @default(false)
+  rejectionReason  String?
+  moderatedById    String?          @db.Uuid
+  moderatedAt      DateTime?        @db.Timestamptz
   createdAt      DateTime      @default(now()) @db.Timestamptz
 
   matches BloodMatch[]
@@ -174,6 +192,7 @@ model BloodRequest {
   @@index([status, urgency])
   @@index([bloodGroup, status])
   @@index([expiresAt])
+  @@index([moderationStatus])
   @@map("blood_requests")
 }
 
@@ -255,6 +274,57 @@ model Report {
   @@unique([reporterId, reportedId])
   @@index([reportedId, resolvedAt])
   @@map("reports")
+}
+
+model Camp {
+  id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name         String   @db.VarChar(200)
+  tagline      String?  @db.VarChar(300)
+  description  String?  @db.Text
+  venue        String   @db.VarChar(300)
+  address      String?  @db.VarChar(500)
+  city         String?  @db.VarChar(100)
+  lat          Float?
+  lng          Float?
+  startTime    DateTime @db.Timestamptz
+  endTime      DateTime @db.Timestamptz
+  organizer    String?  @db.VarChar(200)
+  contactPhone String?  @db.VarChar(20)
+  isActive     Boolean  @default(true)
+  createdById  String?  @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  registrations CampRegistration[]
+
+  @@index([startTime])
+  @@index([isActive])
+  @@map("camps")
+}
+
+model CampRegistration {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  campId    String   @db.Uuid
+  camp      Camp     @relation(fields: [campId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@unique([campId, userId])
+  @@index([userId])
+  @@map("camp_registrations")
+}
+
+model PushToken {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId     String   @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique @db.VarChar(255)
+  platform   String?  @db.VarChar(20)
+  lastUsedAt DateTime @default(now()) @db.Timestamptz
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@map("push_tokens")
 }
 
 model GeocodeCache {

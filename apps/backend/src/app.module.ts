@@ -20,6 +20,7 @@ import { WebSocketModule } from './modules/websocket/websocket.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { CampsModule } from './modules/camps/camps.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { AdminModule } from './modules/admin/admin.module';
     NotificationsModule,
     ReportsModule,
     AdminModule,
+    CampsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -46,6 +46,13 @@ export class RequestsController {
     return this.requestsService.cancelRequest(user.id, id);
   }
 
+  // Donor self-accepts a nearby request (free-accept model). The service
+  // enforces donor-profile existence, blood compatibility and eligibility.
+  @Post(':id/accept')
+  acceptRequest(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.requestsService.acceptRequest(user.id, id);
+  }
+
   @Get(':id/matches')
   getMatchesForRequest(@CurrentUser() user: User, @Param('id') id: string) {
     return this.requestsService.getMatchesForRequest(id, user.id);

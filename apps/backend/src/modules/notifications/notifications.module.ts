@@ -1,13 +1,13 @@
 import { Global, Module } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
-import { FcmService } from './fcm.service';
+import { ExpoPushService } from './expo-push.service';
 import { WebSocketModule } from '../websocket/websocket.module';
 
 @Global()
 @Module({
   imports: [WebSocketModule],
-  providers: [NotificationsService, FcmService],
+  providers: [NotificationsService, ExpoPushService],
   controllers: [NotificationsController],
   exports: [NotificationsService],
 })

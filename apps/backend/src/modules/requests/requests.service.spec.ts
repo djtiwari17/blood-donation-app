@@ -7,9 +7,11 @@ import {
 } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import { RequestsService } from './requests.service';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { GeocodingService } from '../geocoding/geocoding.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -47,6 +49,17 @@ const mockQueue = {
   add: jest.fn().mockResolvedValue({ id: 'job-id' }),
 };
 
+const mockNotifications = {
+  notifyMatchAccepted: jest.fn().mockResolvedValue(undefined),
+  notifyRequestFulfilled: jest.fn().mockResolvedValue(undefined),
+};
+
+// Default to auto_approve so createRequest keeps enqueuing matches (the radius
+// tests below exercise that path). Moderation gating is covered separately.
+const mockConfig = {
+  get: jest.fn((key: string) => (key === 'app.moderationMode' ? 'auto_approve' : undefined)),
+};
+
 // ── Test Suite ─────────────────────────────────────────────────────────────────
 
 describe('RequestsService', () => {
@@ -60,6 +73,8 @@ describe('RequestsService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: RedisService, useValue: mockRedis },
         { provide: GeocodingService, useValue: mockGeocoding },
+        { provide: NotificationsService, useValue: mockNotifications },
+        { provide: ConfigService, useValue: mockConfig },
         { provide: getQueueToken('MATCH_REQUESTS'), useValue: mockQueue },
       ],
     }).compile();

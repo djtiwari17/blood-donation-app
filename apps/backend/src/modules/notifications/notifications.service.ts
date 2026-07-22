@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { FcmService } from './fcm.service';
+import { ExpoPushService } from './expo-push.service';
 import { WebSocketGateway } from '../websocket/websocket.gateway';
 
 export type NotificationType =
@@ -8,15 +8,34 @@ export type NotificationType =
   | 'MATCH_ACCEPTED'
   | 'MATCH_DECLINED'
   | 'REQUEST_FULFILLED'
-  | 'REQUEST_EXPIRED';
+  | 'REQUEST_EXPIRED'
+  | 'CAMP_REMINDER'
+  | 'DONATION_ANNIVERSARY';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly fcm: FcmService,
+    private readonly expoPush: ExpoPushService,
     private readonly wsGateway: WebSocketGateway,
   ) {}
+
+  // ── Push token registration (multi-device) ───────────────────────────────────
+
+  async registerToken(userId: string, token: string, platform?: string) {
+    // A token is device-unique; reassign it if the device switched accounts.
+    await this.prisma.pushToken.upsert({
+      where: { token },
+      create: { userId, token, platform },
+      update: { userId, platform, lastUsedAt: new Date() },
+    });
+    return { success: true };
+  }
+
+  async removeToken(token: string) {
+    await this.prisma.pushToken.deleteMany({ where: { token } });
+    return { success: true };
+  }
 
   // ── Create & deliver a notification ─────────────────────────────────────────
 
@@ -41,13 +60,19 @@ export class NotificationsService {
       createdAt: notification.createdAt,
     });
 
-    // FCM push notification (best-effort)
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { fcmToken: true },
+    // Expo push delivery to all of the user's registered devices (best-effort).
+    const tokens = await this.prisma.pushToken.findMany({
+      where: { userId },
+      select: { token: true },
     });
-    if (user?.fcmToken) {
-      await this.fcm.sendToToken(user.fcmToken, { title, body, data: { type, relatedId: relatedId ?? '' } });
+    if (tokens.length > 0) {
+      const invalid = await this.expoPush.sendToTokens(
+        tokens.map(t => t.token),
+        { title, body, data: { type, relatedId: relatedId ?? '' } },
+      );
+      if (invalid.length > 0) {
+        await this.prisma.pushToken.deleteMany({ where: { token: { in: invalid } } });
+      }
     }
 
     return notification;
@@ -55,13 +80,14 @@ export class NotificationsService {
 
   // ── Domain-specific helpers ──────────────────────────────────────────────────
 
-  async notifyMatchFound(donorUserId: string, requestId: string, matchId: string, bloodGroup: string, hospitalName: string) {
+  async notifyMatchFound(donorUserId: string, requestId: string, _matchId: string, bloodGroup: string, hospitalName: string) {
     return this.create(
       donorUserId,
       'MATCH_FOUND',
       'New Blood Request Nearby',
       `A patient needing ${bloodGroup} blood at ${hospitalName} needs your help.`,
-      matchId,
+      // relatedId = requestId so a tap can deep-link to the request details.
+      requestId,
     );
   }
 
@@ -102,6 +128,16 @@ export class NotificationsService {
       'Request Expired',
       'Your blood request has expired without being fulfilled. Please create a new one if still needed.',
       requestId,
+    );
+  }
+
+  async notifyCampReminder(userId: string, campId: string, campName: string, timeLabel: string) {
+    return this.create(
+      userId,
+      'CAMP_REMINDER',
+      'Blood Camp Reminder',
+      `${campName} is today at ${timeLabel}. See you there!`,
+      campId,
     );
   }
 

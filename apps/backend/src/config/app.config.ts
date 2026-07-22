@@ -26,6 +26,10 @@ export const appConfigSchema = Joi.object({
 
   ADMIN_ALLOWED_IPS: Joi.string().default('127.0.0.1'),
 
+  // Request moderation: 'all_pending' = every request waits for admin approval
+  // before reaching the donor feed; 'auto_approve' = live immediately.
+  MODERATION_MODE: Joi.string().valid('all_pending', 'auto_approve').default('all_pending'),
+
   RATE_LIMIT_SEND_OTP_PER_HOUR: Joi.number().default(5),
   RATE_LIMIT_VERIFY_OTP_PER_5MIN: Joi.number().default(3),
   RATE_LIMIT_CREATE_REQUEST_PER_HOUR: Joi.number().default(10),
@@ -39,6 +43,7 @@ export const appConfig = registerAs('app', () => ({
   corsOrigin: process.env.CORS_ORIGIN,
   adminAllowedIps: (process.env.ADMIN_ALLOWED_IPS ?? '127.0.0.1').split(',').map(ip => ip.trim()),
   nominatimBaseUrl: process.env.NOMINATIM_BASE_URL,
+  moderationMode: process.env.MODERATION_MODE ?? 'all_pending',
   rateLimit: {
     sendOtpPerHour: parseInt(process.env.RATE_LIMIT_SEND_OTP_PER_HOUR ?? '5', 10),
     verifyOtpPer5Min: parseInt(process.env.RATE_LIMIT_VERIFY_OTP_PER_5MIN ?? '3', 10),

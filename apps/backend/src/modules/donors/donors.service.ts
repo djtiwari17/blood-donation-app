@@ -107,6 +107,29 @@ export class DonorsService {
     return this.getProfile(userId);
   }
 
+  // ── Lightweight location refresh (no reverse-geocode) ────────────────────────
+  // Called periodically by the app so location-based alerts target the donor's
+  // current position. Skips the Nominatim reverse-geocode that updateProfile does.
+
+  async updateLocation(userId: string, lat: number, lng: number) {
+    const profile = await this.prisma.donorProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!profile) throw new NotFoundException('Donor profile not found');
+
+    await this.prisma.donorProfile.update({
+      where: { userId },
+      data: { locationLat: lat, locationLng: lng },
+    });
+    await this.prisma.$executeRaw`
+      UPDATE donor_profiles
+      SET location = ST_SetSRID(ST_MakePoint(${lng}::float8, ${lat}::float8), 4326)::geography
+      WHERE "userId" = ${userId}::uuid
+    `;
+    return { success: true };
+  }
+
   // ── Donation history ────────────────────────────────────────────────────────
 
   async getDonationHistory(userId: string, page: number, limit: number) {
