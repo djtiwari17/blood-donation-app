@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Alert, ActivityIndicator,
+  TouchableOpacity, Alert, ActivityIndicator, Linking,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -15,6 +15,7 @@ import { Button } from '../../components/Button';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
 import { matchingApi } from '../../api/matching.api';
 import { formatBloodGroup, formatUrgency } from '../../utils/format';
+import { openInGoogleMaps } from '../../utils/maps';
 
 type Props = {
   navigation: NativeStackNavigationProp<DonorHomeStackParamList, 'RequestDetails'>;
@@ -26,6 +27,7 @@ export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
   const queryClient = useQueryClient();
   const [responding, setResponding] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [accepting, setAccepting] = useState(false);
 
   const { data: request, isLoading, error } = useQuery<ApiBloodRequest>({
     queryKey: ['request', requestId],
@@ -63,6 +65,42 @@ export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
           },
         },
       ]
+    );
+  };
+
+  // Free self-accept: donor commits to a request they weren't engine-matched to.
+  const handleAccept = () => {
+    if (!request) return;
+    Alert.alert(
+      'Accept request',
+      `Confirm you can donate ${formatBloodGroup(request.bloodGroup)} blood for ${request.patientName} at ${request.hospitalName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, I can donate',
+          onPress: async () => {
+            setAccepting(true);
+            try {
+              await requestsApi.acceptRequest(requestId);
+              queryClient.invalidateQueries({ queryKey: ['request', requestId] });
+              queryClient.invalidateQueries({ queryKey: ['nearbyRequests'] });
+              Alert.alert('Accepted', 'You accepted this request. You can now call the requester to coordinate.');
+            } catch (err: any) {
+              Alert.alert('Error', err?.response?.data?.message ?? 'Failed to accept request');
+            } finally {
+              setAccepting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const callRequester = () => {
+    const phone = request?.receiverPhone;
+    if (!phone) return;
+    Linking.openURL(`tel:${phone}`).catch(() =>
+      Alert.alert('Unable to call', 'Could not open the dialer on this device.'),
     );
   };
 
@@ -163,6 +201,15 @@ export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
           {request.distanceKm != null && row('location-outline', 'Distance', `${request.distanceKm.toFixed(1)} km away`, colors.primary)}
           {row('time-outline', 'Required By', formatDate(request.requiredBy), colors.error)}
           {row('barcode-outline', 'Request Code', request.requestCode)}
+          {request.hospitalLat != null && request.hospitalLng != null && (
+            <TouchableOpacity
+              style={styles.mapsRow}
+              onPress={() => openInGoogleMaps(request.hospitalLat, request.hospitalLng, request.hospitalName)}
+            >
+              <Ionicons name="navigate" size={16} color={colors.primary} />
+              <Text style={styles.mapsText}>Open in Google Maps</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Match status card */}
@@ -195,15 +242,23 @@ export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
               </Text>
             </View>
             {matchAccepted && !matchDonated && (
-              <Text style={styles.matchHint}>
-                The receiver can see your contact details. Confirm once you have donated.
-              </Text>
+              <>
+                {request.receiverPhone ? (
+                  <View style={styles.contactRow}>
+                    <Ionicons name="call" size={16} color={colors.success} />
+                    <Text style={styles.contactText}>{request.receiverPhone}</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.matchHint}>
+                  Call the requester to coordinate, then confirm once you have donated.
+                </Text>
+              </>
             )}
           </View>
         )}
 
         <View style={styles.btnRow}>
-          {myMatch && !matchAccepted && !matchDonated && !matchDeclined ? (
+          {myMatch?.status === 'NOTIFIED' ? (
             <>
               <Button
                 label="Decline"
@@ -223,13 +278,24 @@ export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
               />
             </>
           ) : matchAccepted && !matchDonated ? (
-            <Button
-              label="Confirm I Donated"
-              onPress={handleConfirmDonation}
-              variant="primary"
-              loading={confirming}
-              style={{ flex: 1 }}
-            />
+            <>
+              <Button
+                label="Call Requester"
+                onPress={callRequester}
+                variant="outline"
+                fullWidth={false}
+                style={styles.callBtn}
+                disabled={!request.receiverPhone}
+              />
+              <Button
+                label="Confirm I Donated"
+                onPress={handleConfirmDonation}
+                variant="primary"
+                fullWidth={false}
+                style={styles.donateBtn}
+                loading={confirming}
+              />
+            </>
           ) : matchDonated ? (
             <Button
               label="Donation Confirmed!"
@@ -238,14 +304,16 @@ export const RequestDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
               disabled
               style={{ flex: 1 }}
             />
-          ) : !myMatch ? (
-            <View style={styles.noMatchWrap}>
-              <Ionicons name="information-circle-outline" size={18} color={colors.textHint} />
-              <Text style={styles.noMatchText}>
-                You haven&apos;t been matched to this request yet.
-              </Text>
-            </View>
-          ) : null}
+          ) : (
+            // No match, or a previously declined/expired one — allow self-accept.
+            <Button
+              label="Accept Request"
+              onPress={handleAccept}
+              variant="primary"
+              loading={accepting}
+              style={{ flex: 1 }}
+            />
+          )}
         </View>
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -286,12 +354,17 @@ const styles = StyleSheet.create({
   matchStatus: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   matchStatusText: { fontSize: fonts.sizes.base, fontWeight: '600' },
   matchHint: { fontSize: fonts.sizes.sm, color: colors.textHint, marginTop: spacing.sm },
+  contactRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm,
+    backgroundColor: colors.successLight, borderRadius: radius.md, padding: spacing.sm,
+  },
+  contactText: { fontSize: fonts.sizes.base, color: colors.textPrimary, fontWeight: '700' },
+  mapsRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    borderWidth: 1.5, borderColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.sm,
+  },
+  mapsText: { fontSize: fonts.sizes.sm, color: colors.primary, fontWeight: '700' },
   btnRow: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.base, marginTop: spacing.xs },
   callBtn: { flex: 1 },
   donateBtn: { flex: 1 },
-  noMatchWrap: {
-    flex: 1, flexDirection: 'row', gap: spacing.sm, alignItems: 'center',
-    backgroundColor: colors.grayPale, borderRadius: radius.md, padding: spacing.md,
-  },
-  noMatchText: { flex: 1, fontSize: fonts.sizes.sm, color: colors.textHint },
 });

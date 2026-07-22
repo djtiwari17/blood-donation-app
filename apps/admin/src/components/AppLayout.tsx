@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Layout, Menu, Typography, Button, Avatar, Space, Tag } from 'antd';
 import {
   DashboardOutlined, UserOutlined, FileTextOutlined,
-  WarningOutlined, LogoutOutlined, HeartFilled,
+  WarningOutlined, LogoutOutlined, HeartFilled, CalendarOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { key: '/',         icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/users',    icon: <UserOutlined />,      label: 'Users' },
   { key: '/requests', icon: <FileTextOutlined />,  label: 'Blood Requests' },
+  { key: '/camps',    icon: <CalendarOutlined />,  label: 'Camps & Events' },
   { key: '/reports',  icon: <WarningOutlined />,   label: 'Reports' },
 ];
 

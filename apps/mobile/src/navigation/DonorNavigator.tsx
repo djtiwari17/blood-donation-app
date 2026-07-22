@@ -7,36 +7,60 @@ import { colors, fonts } from '../theme';
 
 import { DonorDashboardScreen } from '../screens/donor/DonorDashboardScreen';
 import { NearbyRequestsScreen } from '../screens/donor/NearbyRequestsScreen';
+import { MapViewScreen } from '../screens/donor/MapViewScreen';
 import { RequestDetailsScreen } from '../screens/donor/RequestDetailsScreen';
 import { DonationHistoryScreen } from '../screens/donor/DonationHistoryScreen';
 import { DonorProfileScreen } from '../screens/donor/DonorProfileScreen';
 import { NotificationsScreen } from '../screens/common/NotificationsScreen';
 import { ReportUserScreen } from '../screens/common/ReportUserScreen';
+import { CampsScreen } from '../screens/common/CampsScreen';
+import { CreateRequestScreen } from '../screens/receiver/CreateRequestScreen';
+import { RequestSubmittedScreen } from '../screens/receiver/RequestSubmittedScreen';
+import { MatchingDonorsScreen } from '../screens/receiver/MatchingDonorsScreen';
+import { RequestStatusScreen } from '../screens/receiver/RequestStatusScreen';
 import {
   DonorHomeStackParamList,
   DonorHistoryStackParamList,
   DonorProfileStackParamList,
+  ReceiverHomeStackParamList,
 } from './types';
 
 const HomeStack = createNativeStackNavigator<DonorHomeStackParamList>();
 const RequestsStack = createNativeStackNavigator<DonorHomeStackParamList>();
+const RequestFlowStack = createNativeStackNavigator<ReceiverHomeStackParamList>();
 const HistoryStack = createNativeStackNavigator<DonorHistoryStackParamList>();
 const ProfileStack = createNativeStackNavigator<DonorProfileStackParamList>();
 const Tab = createBottomTabNavigator();
+
+// Nested blood-request flow (mirrors the receiver Home stack) so a
+// DONOR_RECEIVER user can post a request from the donor "Request Blood" CTA.
+const RequestFlowNavigator = () => (
+  <RequestFlowStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <RequestFlowStack.Screen name="CreateRequest" component={CreateRequestScreen} />
+    <RequestFlowStack.Screen name="RequestSubmitted" component={RequestSubmittedScreen} />
+    <RequestFlowStack.Screen name="RequestStatus" component={RequestStatusScreen} />
+    <RequestFlowStack.Screen name="MatchingDonors" component={MatchingDonorsScreen} />
+    <RequestFlowStack.Screen name="ReportUser" component={ReportUserScreen} />
+    <RequestFlowStack.Screen name="Notifications" component={NotificationsScreen} />
+  </RequestFlowStack.Navigator>
+);
 
 const HomeNavigator = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
     <HomeStack.Screen name="DonorDashboard" component={DonorDashboardScreen} />
     <HomeStack.Screen name="NearbyRequests" component={NearbyRequestsScreen} />
+    <HomeStack.Screen name="MapView" component={MapViewScreen} />
     <HomeStack.Screen name="RequestDetails" component={RequestDetailsScreen} />
     <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
     <HomeStack.Screen name="ReportUser" component={ReportUserScreen} />
+    <HomeStack.Screen name="RequestFlow" component={RequestFlowNavigator} />
   </HomeStack.Navigator>
 );
 
 const RequestsNavigator = () => (
   <RequestsStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
     <RequestsStack.Screen name="NearbyRequests" component={NearbyRequestsScreen} />
+    <RequestsStack.Screen name="MapView" component={MapViewScreen} />
     <RequestsStack.Screen name="RequestDetails" component={RequestDetailsScreen} />
     <RequestsStack.Screen name="ReportUser" component={ReportUserScreen} />
     <RequestsStack.Screen name="Notifications" component={NotificationsScreen} />
@@ -64,6 +88,7 @@ const tabIcon = (route: string, focused: boolean): IconName => {
   const icons: Record<string, [IconName, IconName]> = {
     Home:     ['home', 'home-outline'],
     Requests: ['document-text', 'document-text-outline'],
+    Camps:    ['calendar', 'calendar-outline'],
     History:  ['time', 'time-outline'],
     Profile:  ['person', 'person-outline'],
   };
@@ -86,6 +111,7 @@ export const DonorNavigator = () => (
   >
     <Tab.Screen name="Home" component={HomeNavigator} />
     <Tab.Screen name="Requests" component={RequestsNavigator} />
+    <Tab.Screen name="Camps" component={CampsScreen} />
     <Tab.Screen name="History" component={HistoryNavigator} />
     <Tab.Screen name="Profile" component={ProfileNavigator} />
   </Tab.Navigator>

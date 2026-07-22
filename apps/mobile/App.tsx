@@ -13,6 +13,9 @@ import {
   syncPushToken,
   addResponseListener,
 } from './src/services/push-notifications';
+import { handleNotificationNavigation } from './src/navigation/navigationRef';
+import { getDeviceCoords } from './src/utils/location';
+import { donorsApi } from './src/api/donors.api';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +57,17 @@ function AppInit() {
         if (!cancelled && pushToken) await syncPushToken(pushToken);
       }
 
+      // Refresh the donor's last-known location so alert targeting is current
+      // (one-shot on app open — not continuous GPS tracking). No-op for
+      // receivers, who have no donor profile (the endpoint 404s, ignored).
+      const role = useAuthStore.getState().user?.role;
+      if (role === 'DONOR' || role === 'DONOR_RECEIVER') {
+        const coords = await getDeviceCoords();
+        if (!cancelled && coords) {
+          await donorsApi.updateLocation(coords.lat, coords.lng).catch(() => undefined);
+        }
+      }
+
       // WebSocket connection
       if (!cancelled) {
         const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
@@ -63,11 +77,15 @@ function AppInit() {
       console.warn('[AppInit] push/WebSocket init failed:', err);
     });
 
-    // Handle notification tap when app was in background / killed
+    // Handle notification tap when app was in background / killed → deep-link
     responseListenerRef.current = addResponseListener((response) => {
       const data = response.notification.request.content.data as Record<string, unknown>;
-      if (__DEV__) console.log('[Push] notification tapped, relatedId:', data?.relatedId);
-      // Phase 8: add navigationRef.current?.navigate(...) deep-link here
+      const role = useAuthStore.getState().user?.role;
+      handleNotificationNavigation(
+        data?.type as string | undefined,
+        data?.relatedId as string | undefined,
+        role,
+      );
     });
 
     return () => {

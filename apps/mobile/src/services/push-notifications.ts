@@ -35,10 +35,18 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
 export async function syncPushToken(token: string): Promise<void> {
   try {
-    await apiClient.patch('/users/me', { fcmToken: token });
+    await apiClient.post('/notifications/token', { token, platform: Platform.OS });
   } catch (err) {
     // Non-fatal — token sync can be retried on next app launch
-    console.warn('[Push] Failed to sync push token:', err);
+    console.warn('[Push] Failed to register push token:', err);
+  }
+}
+
+export async function removePushToken(token: string): Promise<void> {
+  try {
+    await apiClient.delete('/notifications/token', { data: { token } });
+  } catch {
+    // Non-fatal — stale tokens are also pruned server-side on delivery failure
   }
 }
 

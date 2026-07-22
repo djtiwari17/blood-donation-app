@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import UsersPage from './pages/UsersPage';
 import RequestsPage from './pages/RequestsPage';
 import ReportsPage from './pages/ReportsPage';
+import CampsPage from './pages/CampsPage';
 
 function RequireAuth() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
           { path: '/',         element: <DashboardPage /> },
           { path: '/users',    element: <UsersPage /> },
           { path: '/requests', element: <RequestsPage /> },
+          { path: '/camps',    element: <CampsPage /> },
           { path: '/reports',  element: <ReportsPage /> },
         ],
       },

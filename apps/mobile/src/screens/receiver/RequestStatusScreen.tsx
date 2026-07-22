@@ -100,6 +100,28 @@ export const RequestStatusScreen: React.FC = () => {
                 </View>
               </View>
 
+              {/* Moderation state */}
+              {active.moderationStatus === 'PENDING_REVIEW' && (
+                <View style={styles.modBanner}>
+                  <Ionicons name="hourglass-outline" size={16} color={colors.warning} />
+                  <Text style={styles.modBannerText}>Awaiting admin approval before donors can see this request.</Text>
+                </View>
+              )}
+              {active.moderationStatus === 'REJECTED' && (
+                <View style={[styles.modBanner, styles.modBannerReject]}>
+                  <Ionicons name="close-circle-outline" size={16} color={colors.error} />
+                  <Text style={styles.modBannerText}>
+                    Rejected by admin{active.rejectionReason ? `: ${active.rejectionReason}` : ''}
+                  </Text>
+                </View>
+              )}
+              {active.isVerified && (
+                <View style={[styles.modBanner, styles.modBannerVerified]}>
+                  <Ionicons name="shield-checkmark" size={16} color={colors.success} />
+                  <Text style={styles.modBannerText}>Verified by admin</Text>
+                </View>
+              )}
+
               {/* Timeline */}
               <View style={styles.timeline}>
                 {STATUS_STEPS.map((step, i) => {
@@ -123,13 +145,15 @@ export const RequestStatusScreen: React.FC = () => {
                 })}
               </View>
 
-              <TouchableOpacity
-                style={styles.viewMatchesBtn}
-                onPress={() => navigation.navigate('MatchingDonors', { requestId: active.id })}
-              >
-                <Ionicons name="people-outline" size={18} color={colors.white} />
-                <Text style={styles.viewMatchesText}>View Matching Donors</Text>
-              </TouchableOpacity>
+              {active.moderationStatus !== 'PENDING_REVIEW' && active.moderationStatus !== 'REJECTED' && (
+                <TouchableOpacity
+                  style={styles.viewMatchesBtn}
+                  onPress={() => navigation.navigate('MatchingDonors', { requestId: active.id })}
+                >
+                  <Ionicons name="people-outline" size={18} color={colors.white} />
+                  <Text style={styles.viewMatchesText}>View Matching Donors</Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={styles.cancelBtn}
@@ -201,6 +225,14 @@ const styles = StyleSheet.create({
   activeSub: { fontSize: fonts.sizes.sm, color: colors.textSecondary },
   statusDot: { borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
   statusDotText: { fontSize: fonts.sizes.xs, color: colors.white, fontWeight: '700' },
+  modBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: colors.warningLight, borderRadius: radius.md,
+    padding: spacing.sm, marginBottom: spacing.md,
+  },
+  modBannerReject: { backgroundColor: colors.urgentBg },
+  modBannerVerified: { backgroundColor: colors.successLight },
+  modBannerText: { flex: 1, fontSize: fonts.sizes.sm, color: colors.textSecondary },
   timeline: { gap: 0 },
   timelineStep: { flexDirection: 'row', gap: spacing.md, minHeight: 56 },
   timelineLeft: { alignItems: 'center', width: 24 },

@@ -27,16 +27,29 @@ export interface ApiBloodRequest {
   requiredBy: string;
   expiresAt: string;
   status: string;
+  // Admin moderation (present on receiver's own requests; isVerified also on donor feed)
+  moderationStatus?: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+  isVerified?: boolean;
+  rejectionReason?: string | null;
   createdAt: string;
   distanceKm?: number;
   totalMatches?: number;
   acceptedMatches?: number;
+  // Requester phone — only present (unmasked) once the donor's match is ACCEPTED.
+  receiverPhone?: string | null;
   myMatch?: {
     id: string;
     status: string; // NOTIFIED | ACCEPTED | DONATED | CANCELLED | TIMED_OUT
     distanceKm: number;
     timeoutAt: string;
   } | null;
+}
+
+export interface AcceptRequestResult {
+  matchId: string;
+  status: string;
+  requestId: string;
+  receiverPhone: string | null;
 }
 
 export const requestsApi = {
@@ -64,6 +77,11 @@ export const requestsApi = {
 
   cancelRequest: async (requestId: string): Promise<void> => {
     await apiClient.patch(`/requests/${requestId}/cancel`);
+  },
+
+  acceptRequest: async (requestId: string): Promise<AcceptRequestResult> => {
+    const res = await apiClient.post(`/requests/${requestId}/accept`);
+    return res.data.data;
   },
 
   getMatchesForRequest: async (requestId: string): Promise<ApiMatch[]> => {
