@@ -13,6 +13,7 @@ import { Header } from '../../components/Header';
 import { BloodGroupBadge, UrgencyBadge } from '../../components/Badge';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
 import { formatBloodGroup } from '../../utils/format';
+import { isLocationNotSetError, enableDonorLocation } from '../../utils/location';
 
 const FILTERS = ['All', 'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'] as const;
 type Filter = typeof FILTERS[number];
@@ -25,6 +26,15 @@ export const NearbyRequestsScreen: React.FC = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('All');
+  const [enabling, setEnabling] = useState(false);
+
+  const handleEnableLocation = async () => {
+    setEnabling(true);
+    const ok = await enableDonorLocation();
+    setEnabling(false);
+    if (ok) refetch();
+    else Alert.alert('Location needed', 'Allow location access so we can show requests near you.');
+  };
 
   const { data: requests = [], isLoading, error, refetch } = useQuery({
     queryKey: ['nearbyRequests'],
@@ -158,15 +168,35 @@ export const NearbyRequestsScreen: React.FC = () => {
   };
 
   if (error) {
+    const locNeeded = isLocationNotSetError(error);
     return (
       <View style={styles.container}>
         <Header title="Nearby Requests" onBack={() => navigation.goBack()} />
         <View style={styles.empty}>
-          <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
-          <Text style={styles.emptyText}>Failed to load requests</Text>
-          <TouchableOpacity onPress={() => refetch()} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Tap to retry</Text>
-          </TouchableOpacity>
+          <Ionicons
+            name={locNeeded ? 'location-outline' : 'alert-circle-outline'}
+            size={48}
+            color={locNeeded ? colors.secondary : colors.error}
+          />
+          <Text style={styles.emptyText}>
+            {locNeeded ? 'Turn on location to see requests near you' : 'Failed to load requests'}
+          </Text>
+          {locNeeded ? (
+            <TouchableOpacity onPress={handleEnableLocation} style={styles.enableBtn} disabled={enabling}>
+              {enabling ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <>
+                  <Ionicons name="navigate" size={16} color={colors.white} />
+                  <Text style={styles.enableText}>Enable Location</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={() => refetch()} style={styles.retryBtn}>
+              <Text style={styles.retryText}>Tap to retry</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -321,4 +351,10 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: fonts.sizes.base, color: colors.textHint },
   retryBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.base },
   retryText: { color: colors.primary, fontWeight: '600' },
+  enableBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    backgroundColor: colors.primary, paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
+    borderRadius: radius.md, marginTop: spacing.xs,
+  },
+  enableText: { color: colors.white, fontWeight: '700', fontSize: fonts.sizes.md },
 });

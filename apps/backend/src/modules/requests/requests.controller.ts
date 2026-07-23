@@ -1,24 +1,20 @@
 import {
-  Body, Controller, ForbiddenException, Get, Param, Patch, Post, Query, UseGuards,
+  Body, Controller, Get, Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User, UserRole } from '@prisma/client';
-
-const RECEIVER_ROLES: UserRole[] = [UserRole.RECEIVER, UserRole.DONOR_RECEIVER, UserRole.ADMIN, UserRole.SUPER_ADMIN];
+import { User } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard)
 @Controller('requests')
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 
+  // Open to any authenticated user — a donor may also need blood themselves.
   @Post()
   createRequest(@CurrentUser() user: User, @Body() dto: CreateRequestDto) {
-    if (!RECEIVER_ROLES.includes(user.role)) {
-      throw new ForbiddenException('Only receivers can create blood requests');
-    }
     return this.requestsService.createRequest(user.id, dto);
   }
 

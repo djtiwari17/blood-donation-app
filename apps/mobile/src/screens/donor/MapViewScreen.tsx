@@ -12,7 +12,7 @@ import { colors, fonts, spacing, radius, shadow } from '../../theme';
 import { Header } from '../../components/Header';
 import { UrgencyBadge } from '../../components/Badge';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
-import { getDeviceCoords, Coords } from '../../utils/location';
+import { getDeviceCoords, Coords, isLocationNotSetError, enableDonorLocation } from '../../utils/location';
 import { openInGoogleMaps } from '../../utils/maps';
 import { formatBloodGroup } from '../../utils/format';
 
@@ -33,11 +33,25 @@ export const MapViewScreen: React.FC = () => {
   const [locState, setLocState] = useState<'loading' | 'ready' | 'denied'>('loading');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const { data: requests = [], isLoading } = useQuery({
+  const { data: requests = [], isLoading, error, refetch } = useQuery({
     queryKey: ['nearbyRequests'],
     queryFn: () => requestsApi.getNearbyRequests(50),
     retry: 1,
   });
+
+  const [enabling, setEnabling] = useState(false);
+  const handleEnableLocation = async () => {
+    setEnabling(true);
+    const ok = await enableDonorLocation();
+    setEnabling(false);
+    if (ok) {
+      const c = await getDeviceCoords();
+      if (c) setCoords(c);
+      refetch();
+    } else {
+      Alert.alert('Location needed', 'Allow location access so we can map requests near you.');
+    }
+  };
 
   // One-shot location fetch on mount (no continuous GPS watching → battery-safe).
   useEffect(() => {
@@ -100,6 +114,18 @@ export const MapViewScreen: React.FC = () => {
         {isLoading && locState === 'loading' ? (
           <View style={styles.loading}>
             <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : error && isLocationNotSetError(error) ? (
+          <View style={styles.loading}>
+            <Ionicons name="location-outline" size={48} color={colors.secondary} />
+            <Text style={styles.emptyText}>Turn on location to see the map</Text>
+            <TouchableOpacity style={styles.enableBtn} onPress={handleEnableLocation} disabled={enabling}>
+              {enabling ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.enableText}>Enable Location</Text>
+              )}
+            </TouchableOpacity>
           </View>
         ) : pins.length === 0 ? (
           <View style={styles.loading}>
@@ -265,6 +291,12 @@ const styles = StyleSheet.create({
   webview: { flex: 1, backgroundColor: colors.grayPale },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   emptyText: { fontSize: fonts.sizes.base, color: colors.textHint },
+  enableBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+  },
+  enableText: { color: colors.white, fontWeight: '700', fontSize: fonts.sizes.md },
   card: {
     position: 'absolute', left: spacing.base, right: spacing.base, bottom: spacing.base,
     backgroundColor: colors.white, borderRadius: radius.xl, padding: spacing.base, ...shadow.lg,
