@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
@@ -15,6 +15,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { requestsApi, ApiBloodRequest } from '../../api/requests.api';
 import { donorsApi } from '../../api/donors.api';
 import { formatBloodGroup } from '../../utils/format';
+import { isLocationNotSetError, enableDonorLocation } from '../../utils/location';
 
 // Urgency tiers treated as "emergency" for the highlighted home section.
 const EMERGENCY_URGENCY = new Set(['CRITICAL', 'HIGH']);
@@ -47,18 +48,47 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   const emergencies = requests.filter((r) => EMERGENCY_URGENCY.has(r.urgency));
 
-  // "Request Blood" is a receiver action. DONOR_RECEIVER users can post one via
-  // the nested request flow; pure donors can't (backend blocks it), so explain.
+  // Request Blood is open to everyone — a donor may also need blood themselves.
   const handleRequestBlood = () => {
-    if (user?.role === 'DONOR_RECEIVER') {
-      navigation.navigate('RequestFlow', { screen: 'CreateRequest' });
-    } else {
-      Alert.alert(
-        'Requesting blood',
-        "You're registered as a donor. Posting a blood request needs receiver access on your account.",
-      );
-    }
+    navigation.navigate('RequestFlow', { screen: 'CreateRequest' });
   };
+
+  // Nearby feed needs a saved location; offer a one-tap enable when it's missing.
+  const [enabling, setEnabling] = useState(false);
+  const locationNeeded = isLocationNotSetError(requestsError);
+  const handleEnableLocation = async () => {
+    setEnabling(true);
+    const ok = await enableDonorLocation();
+    setEnabling(false);
+    if (ok) refetchRequests();
+    else Alert.alert('Location needed', 'Allow location access so we can show requests near you.');
+  };
+
+  const renderLoadError = () => (
+    <View style={styles.sectionState}>
+      <Ionicons
+        name={locationNeeded ? 'location-outline' : 'alert-circle-outline'}
+        size={32}
+        color={locationNeeded ? colors.secondary : colors.error}
+      />
+      <Text style={styles.sectionStateText}>
+        {locationNeeded ? 'Turn on location to see requests near you' : 'Failed to load requests'}
+      </Text>
+      {locationNeeded ? (
+        <TouchableOpacity onPress={handleEnableLocation} style={styles.enableChip} disabled={enabling}>
+          {enabling ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Text style={styles.enableChipText}>Enable Location</Text>
+          )}
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity onPress={() => refetchRequests()}>
+          <Text style={styles.retryText}>Tap to retry</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -138,13 +168,7 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
           {requestsError ? (
-            <View style={styles.sectionState}>
-              <Ionicons name="alert-circle-outline" size={32} color={colors.error} />
-              <Text style={styles.sectionStateText}>Failed to load requests</Text>
-              <TouchableOpacity onPress={() => refetchRequests()}>
-                <Text style={styles.retryText}>Tap to retry</Text>
-              </TouchableOpacity>
-            </View>
+            renderLoadError()
           ) : requestsLoading ? (
             <View style={styles.sectionState}>
               <ActivityIndicator color={colors.primary} />
@@ -187,13 +211,7 @@ export const DonorDashboardScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
           {requestsError ? (
-            <View style={styles.sectionState}>
-              <Ionicons name="alert-circle-outline" size={32} color={colors.error} />
-              <Text style={styles.sectionStateText}>Failed to load nearby requests</Text>
-              <TouchableOpacity onPress={() => refetchRequests()}>
-                <Text style={styles.retryText}>Tap to retry</Text>
-              </TouchableOpacity>
-            </View>
+            renderLoadError()
           ) : requestsLoading ? (
             <View style={styles.sectionState}>
               <ActivityIndicator color={colors.primary} />
@@ -305,4 +323,10 @@ const styles = StyleSheet.create({
   sectionState: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
   sectionStateText: { fontSize: fonts.sizes.sm, color: colors.textHint },
   retryText: { fontSize: fonts.sizes.sm, color: colors.primary, fontWeight: '600' },
+  enableChip: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg,
+    borderRadius: radius.md, marginTop: spacing.xs,
+  },
+  enableChipText: { color: colors.white, fontWeight: '700', fontSize: fonts.sizes.sm },
 });

@@ -130,7 +130,7 @@ const SKIP = !process.env.DATABASE_URL || !process.env.REDIS_URL;
         .expect(403);
     });
 
-    it('donor token cannot create blood requests (receiver-only endpoint)', async () => {
+    it('donor token can create blood requests (open to all — a donor may also need blood)', async () => {
       const token = await getDonorToken();
       const res = await request(app.getHttpServer())
         .post('/requests')
@@ -144,8 +144,8 @@ const SKIP = !process.env.DATABASE_URL || !process.env.REDIS_URL;
           requiredBy: new Date(Date.now() + 86400000).toISOString(),
         });
 
-      // Should be 403 (only RECEIVER or DONOR_RECEIVER role can create requests)
-      expect([403, 400]).toContain(res.status);
+      // Request Blood is open to everyone now — no receiver-only gate.
+      expect(res.status).toBe(201);
     });
   });
 
